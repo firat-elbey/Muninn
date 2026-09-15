@@ -26,7 +26,10 @@ jobs:
       - name: Install test runner
         run: pip install -r requirements-test.txt -e .
       - name: Run suite without optional dependencies
-        run: python -m pytest -q
+        run: python -m pytest -q --junitxml="$RUNNER_TEMP/muninn-tests.xml"
+      - name: Report test failures
+        if: always()
+        run: python tools/report_test_failures.py "$RUNNER_TEMP/muninn-tests.xml"
 
   # This job enables tree-sitter and enforces the combined coverage floor.
   full:
@@ -43,7 +46,10 @@ jobs:
       - name: Check Python source
         run: python -m pyflakes src tests tools eval
       - name: Run suite under branch coverage
-        run: python -m coverage run --branch --source=src/muninn -m pytest -q
+        run: python -m coverage run --branch --source=src/muninn -m pytest -q --junitxml="$RUNNER_TEMP/muninn-tests.xml"
+      - name: Report test failures
+        if: always()
+        run: python tools/report_test_failures.py "$RUNNER_TEMP/muninn-tests.xml"
       - name: Enforce the coverage floor
         run: python -m coverage report --fail-under=93
 
