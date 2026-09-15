@@ -31,7 +31,7 @@ Issues = "https://github.com/firat-elbey/muninn/issues"
 # The core uses only the Python standard library. Optional features fail softly.
 [project.optional-dependencies]
 # This extra enables deterministic extraction from source code and structured documents.
-extract = ["tree-sitter>=0.23", "tree-sitter-language-pack>=0.13,<1.0"]
+extract = ["tree-sitter>=0.23", "tree-sitter-language-pack>=0.13,<2.0"]
 # Language-routed dependency extraction. The standard-library fallback remains
 # available when this extra is absent.
 graph = ["graphifyy>=0.9.32,<0.10"]
