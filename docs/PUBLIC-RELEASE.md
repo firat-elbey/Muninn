@@ -19,7 +19,7 @@ Public source and standalone assets have separate gates:
 1. Before a public source push, complete every local check in steps 1 and 2.
    Obtain explicit approval for public source publication.
 2. Before a release tag or standalone assets, require successful public CI on
-   the exact release commit. Every `core`, `full`, and `package` job must pass.
+   the exact release commit. Every `core`, `full`, `package`, and `DCO sign-off` job must pass.
    Ask for explicit approval before the release.
 
 If private CI is unavailable, use the local checks before the approved public
@@ -201,9 +201,32 @@ If the release commit changes, repeat the local checks and public CI.
 Check that GitHub reports the repository as public and recognizes the
 MIT License. Check again that only `refs/heads/main` is present.
 
-Require the `core`, `full`, and `package` checks on `main`. Block force pushes
-and branch deletion. Enable private vulnerability reporting and Dependabot.
-Install the DCO application or add an equivalent required check for every commit sign-off.
+Require pull requests and these checks on `main`:
+
+- `core (3.10)`
+- `core (3.12)`
+- `core (3.14)`
+- `full`
+- `package`
+- `DCO sign-off`
+
+Select GitHub Actions as the source of each required check.
+Require branches to be up to date before merging.
+Apply the rules to administrators without a bypass.
+Block force pushes and branch deletion.
+Until another maintainer is available, leave the required approval count at zero.
+Enable private vulnerability reporting and Dependabot.
+
+The DCO workflow checks each proposed commit against its author's sign-off.
+It uses trusted base-branch code and read-only permissions for pull requests.
+It reads proposed commit objects without checking out or running proposed files.
+Bot and merge commits have no exemption.
+
+Before release, check DCO enforcement on a temporary pull request.
+A commit without the author's DCO trailer must fail the required check and block the merge.
+A replacement with the matching trailer must pass the same check.
+Close the test pull request without merging it.
+A successful manual workflow run alone does not establish pull-request enforcement.
 
 The issue forms route suspected vulnerabilities to private reporting. Check
 that the private advisory link works before accepting issues. Create labels
@@ -226,6 +249,10 @@ gh release create v0.1.0 --repo firat-elbey/muninn --target "$muninn_release_sha
 The release tag must match the version in `pyproject.toml` and the installer.
 The workflow checks the revision and standalone archive before upload. It
 does not overwrite existing release assets.
+
+Create the release through an authenticated user or application.
+Do not create it with a workflow's `GITHUB_TOKEN`.
+That token does not trigger the required `release: published` workflow.
 
 After the workflow succeeds, use the curl procedure in the
 [installation guide](INSTALL.md) with a fresh destination. Check that the

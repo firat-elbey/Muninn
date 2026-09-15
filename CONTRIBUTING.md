@@ -32,6 +32,11 @@ sign-off with:
 git commit --signoff
 ```
 
+The `DCO sign-off` check requires a `Signed-off-by` trailer that matches the commit author's name and email exactly.
+Every proposed commit must pass, including bot and merge commits.
+A sign-off from the committer alone does not certify a different author.
+A cryptographic commit signature does not replace the DCO trailer.
+
 The sign-off records the contributor's name and email in the permanent public
 history. A GitHub no-reply address may be used when it identifies the same
 account. Do not submit credentials, personal memory sidecars, private ledger

@@ -1,0 +1,37 @@
+name: DCO
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [main]
+  pull_request_target:
+    types: [opened, synchronize, reopened, edited]
+  workflow_dispatch:
+    inputs:
+      base:
+        description: "Full base SHA, or ROOT to check all reachable commits."
+        required: true
+        default: ROOT
+        type: string
+
+jobs:
+  signoffs:
+    name: DCO sign-off
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # Pull requests run trusted workflow code and inspect commit objects only.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.11"
+      - name: Check every proposed author sign-off
+        run: >-
+          python -I -S tools/check_signoffs.py
+          --event "$GITHUB_EVENT_NAME" --event-path "$GITHUB_EVENT_PATH"

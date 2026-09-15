@@ -14,25 +14,6 @@ commands.
 The core runs locally with Python's standard library.
 It requires no account, API key, model service, or database server.
 
-## Evaluation results
-
-| Capability | Result | Limit |
-|---|---|---|
-| Use-adaptive pack recall | At a 400-token budget, adaptive retrieval answered 16 of 18 questions. Flat lexical retrieval answered 15, and a whole-corpus dump answered 6. | The [evaluation](eval/RESULTS-b400k2.md) used 40 synthetic notes and one small answer model. |
-| Long-session recall | A typed Muninn walk answered 43 of 151 LongMemEval questions. Equal-budget flat retrieval answered 36. Preference results were 3 of 30 and 0 of 30, respectively. | Claude Haiku judged the [experiment](eval/longmemeval/RESULTS-walk-typed.md). The experiment did not measure agreement with human annotators, so the result is not leaderboard-comparable. |
-| Bounded bundle loading | The bounded reader loaded a reproduced 669-note bundle in 0.26 seconds with 17.2 MB maximum resident memory. The prior reader exceeded 2.1 GB without returning. | The [measurement](eval/RESULTS-scalable-bundle-loading.md) covers one bundle on one machine. |
-| Source localization | The selected hybrid reached 44.7 percent hit@1 and 80.0 percent hit@10 on 300 SWE-bench Lite issues. Token overlap reached 20.0 and 60.3 percent. | The [labels](eval/code_retrieval/RESULTS-swebench-lite-300.md) identify accepted patch files, not correct patches or answers. The experiment did not establish a statistically significant gain over stronger BM25F retrieval. |
-| Persistent source indexing | SQLite reproduced all 300 lexical rankings. Median reopen time was 0.354 ms, and the index occupied 1.40 times the source bytes. | The [evaluation](eval/code_retrieval/RESULTS-persistent-parity-swebench-lite-300.md) did not resolve storage efficiency or incremental-update cost. |
-| Dependency reconstruction | The optional hybrid reached 0.611 edge F1 across 288 DependEval cases. Graphify reached 0.566, and the internal extractor reached 0.396. | The hybrid itself uses Graphify for several languages. The [comparison](eval/competitive/RESULTS-dependeval-series5-confirmation.md) measures named dependency edges, not semantic retrieval or task completion. The repository excludes unlicensed upstream data and raw archives. |
-| Session continuity | Journaled state supplied every required fact for 12 of 12 questions. Session-opening context improved from 0 of 2 cases to 2 of 2. | The [evaluation](eval/RESULTS-continuity.md) measures context availability rather than model reasoning. |
-| Repository extraction | Four rounds across 11 repositories identified 14 systematic defects and added a regression test for each. The largest subject produced 225,000 notes from 22,132 files in 94 seconds. | The [field study](eval/FIELD-TESTS.md) used three retrieval questions per repository and does not estimate task completion. |
-
-A preregistered evidence-gated retrieval candidate did not meet its
-improvement threshold. Muninn does not use this candidate. The [negative
-result](eval/competitive/RESULTS-ARB-SERIES11-evidence-gated-pilot-v6.md)
-remains with the successful results. [Evidence and claim
-limits](docs/EVIDENCE.md) define the supported public statements.
-
 ## Installation
 
 Give a coding agent this repository and the following request:
@@ -89,44 +70,6 @@ The [installation guide](docs/INSTALL.md) covers custom destinations,
 upgrades, offline installation, and optional extraction dependencies.
 The installer alone does not create agent instructions or hooks.
 Complete agent configuration with `muninn setup`. Then run `muninn doctor --home`.
-
-## Why choose Muninn?
-
-- Knowledge and usage history remain separate. Markdown works without
-  Muninn, while the append-only ledger explains changes to retrieval.
-- Corrections preserve the original note and identify its replacement.
-  Bounded use signals change ranking without deleting eligible knowledge.
-- Packs explain each selection. Compact packs retain exact excerpts and
-  source references without a summarization model.
-- Journals, guarded lessons, and repeated feedback preserve working state
-  through explicit agent commands and narrow lifecycle hooks.
-
-[GBrain](https://github.com/garrytan/gbrain) and
-[Basic Memory](https://github.com/basicmachines-co/basic-memory) also support
-local, editable knowledge. Locality and cross-agent use are not unique to
-Muninn. Its design suits users who want an inspectable memory mechanism
-without a required service or model-based ingestion pipeline.
-
-Muninn does not provide hosted accounts, authenticated user isolation, or
-automatic conversation compression. It has no matched evidence of better
-answer quality or lower total cost than competing memory products.
-The [product comparison](docs/COMPARISON-2026-09.md) distinguishes design
-choices from benchmark claims.
-
-## Design
-
-Muninn separates four forms of state:
-
-1. Knowledge uses [Open Knowledge Format (OKF)
-   v0.2](https://github.com/GoogleCloudPlatform/open-knowledge-format)
-   Markdown. The files remain editable, reviewable in Git, and readable in
-   Obsidian.
-2. Usage events use an append-only ledger under `.muninn/`, separate from the
-   knowledge files. Agents at the same root share this ledger.
-   Removing it leaves the Markdown knowledge intact.
-3. Search indexes and `state.json` are derived caches. Muninn can rebuild them from the Markdown and ledger.
-4. Muninn labels optional model output `inferred` and keeps it separate from
-   deterministically extracted facts.
 
 ## Initial setup
 
@@ -204,6 +147,63 @@ The first query builds an atomic SQLite index under `.muninn/`.
 Later queries reopen or refresh it. The default hybrid preserves the
 highest BM25F result and then combines BM25F with exact path and symbol
 matches. `--json` returns structured results.
+
+## Why choose Muninn?
+
+- Knowledge and usage history remain separate. Markdown works without
+  Muninn, while the append-only ledger explains changes to retrieval.
+- Corrections preserve the original note and identify its replacement.
+  Bounded use signals change ranking without deleting eligible knowledge.
+- Packs explain each selection. Compact packs retain exact excerpts and
+  source references without a summarization model.
+- Journals, guarded lessons, and repeated feedback preserve working state
+  through explicit agent commands and narrow lifecycle hooks.
+
+[GBrain](https://github.com/garrytan/gbrain) and
+[Basic Memory](https://github.com/basicmachines-co/basic-memory) also support
+local, editable knowledge. Locality and cross-agent use are not unique to
+Muninn. Its design suits users who want an inspectable memory mechanism
+without a required service or model-based ingestion pipeline.
+
+Muninn does not provide hosted accounts, authenticated user isolation, or
+automatic conversation compression. It has no matched evidence of better
+answer quality or lower total cost than competing memory products.
+The [product comparison](docs/COMPARISON-2026-09.md) distinguishes design
+choices from benchmark claims.
+
+## Design
+
+Muninn separates four forms of state:
+
+1. Knowledge uses [Open Knowledge Format (OKF)
+   v0.2](https://github.com/GoogleCloudPlatform/open-knowledge-format)
+   Markdown. The files remain editable, reviewable in Git, and readable in
+   Obsidian.
+2. Usage events use an append-only ledger under `.muninn/`, separate from the
+   knowledge files. Agents at the same root share this ledger.
+   Removing it leaves the Markdown knowledge intact.
+3. Search indexes and `state.json` are derived caches. Muninn can rebuild them from the Markdown and ledger.
+4. Muninn labels optional model output `inferred` and keeps it separate from
+   deterministically extracted facts.
+
+## Evaluation results
+
+| Capability | Result | Limit |
+|---|---|---|
+| Use-adaptive pack recall | At a 400-token budget, adaptive retrieval answered 16 of 18 questions. Flat lexical retrieval answered 15, and a whole-corpus dump answered 6. | The [evaluation](eval/RESULTS-b400k2.md) used 40 synthetic notes and one small answer model. |
+| Long-session recall | A typed Muninn walk answered 43 of 151 LongMemEval questions. Equal-budget flat retrieval answered 36. Preference results were 3 of 30 and 0 of 30, respectively. | Claude Haiku judged the [experiment](eval/longmemeval/RESULTS-walk-typed.md). The experiment did not measure agreement with human annotators, so the result is not leaderboard-comparable. |
+| Bounded bundle loading | The bounded reader loaded a reproduced 669-note bundle in 0.26 seconds with 17.2 MB maximum resident memory. The prior reader exceeded 2.1 GB without returning. | The [measurement](eval/RESULTS-scalable-bundle-loading.md) covers one bundle on one machine. |
+| Source localization | The selected hybrid reached 44.7 percent hit@1 and 80.0 percent hit@10 on 300 SWE-bench Lite issues. Token overlap reached 20.0 and 60.3 percent. | The [labels](eval/code_retrieval/RESULTS-swebench-lite-300.md) identify accepted patch files, not correct patches or answers. The experiment did not establish a statistically significant gain over stronger BM25F retrieval. |
+| Persistent source indexing | SQLite reproduced all 300 lexical rankings. Median reopen time was 0.354 ms, and the index occupied 1.40 times the source bytes. | The [evaluation](eval/code_retrieval/RESULTS-persistent-parity-swebench-lite-300.md) did not resolve storage efficiency or incremental-update cost. |
+| Dependency reconstruction | The optional hybrid reached 0.611 edge F1 across 288 DependEval cases. Graphify reached 0.566, and the internal extractor reached 0.396. | The hybrid itself uses Graphify for several languages. The [comparison](eval/competitive/RESULTS-dependeval-series5-confirmation.md) measures named dependency edges, not semantic retrieval or task completion. The repository excludes unlicensed upstream data and raw archives. |
+| Session continuity | Journaled state supplied every required fact for 12 of 12 questions. Session-opening context improved from 0 of 2 cases to 2 of 2. | The [evaluation](eval/RESULTS-continuity.md) measures context availability rather than model reasoning. |
+| Repository extraction | Four rounds across 11 repositories identified 14 systematic defects and added a regression test for each. The largest subject produced 225,000 notes from 22,132 files in 94 seconds. | The [field study](eval/FIELD-TESTS.md) used three retrieval questions per repository and does not estimate task completion. |
+
+A preregistered evidence-gated retrieval candidate did not meet its
+improvement threshold. Muninn does not use this candidate. The [negative
+result](eval/competitive/RESULTS-ARB-SERIES11-evidence-gated-pilot-v6.md)
+remains with the successful results. [Evidence and claim
+limits](docs/EVIDENCE.md) define the supported public statements.
 
 ## Learning from use
 
