@@ -24,7 +24,7 @@ def load_distribution_module():
 
 def metadata(audit, license_expression="MIT"):
     return (
-        "Metadata-Version: 2.4\nName: muninn-kb\nVersion: 0.1.0\n"
+        "Metadata-Version: 2.4\nName: muninn-kb\nVersion: 0.2.0\n"
         f"License-Expression: {license_expression}\nRequires-Python: >=3.10\n"
         + "".join(f"License-File: {name}\n" for name in sorted(audit.LEGAL_FILES))
         + "\n"
@@ -36,8 +36,8 @@ def distribution(tmp_path, audit, kind, changed_license=None):
     if changed_license:
         legal[changed_license] = b"Changed legal text.\n"
     if kind == "wheel":
-        path = tmp_path / "muninn_kb-0.1.0-py3-none-any.whl"
-        prefix = "muninn_kb-0.1.0.dist-info/"
+        path = tmp_path / "muninn_kb-0.2.0-py3-none-any.whl"
+        prefix = "muninn_kb-0.2.0.dist-info/"
         members = {name: b"" for name in audit.source_modules()}
         members.update({prefix + "licenses/" + name: data for name, data in legal.items()})
         members[prefix + "METADATA"] = metadata(audit)
@@ -47,14 +47,14 @@ def distribution(tmp_path, audit, kind, changed_license=None):
             for name, data in members.items():
                 archive.writestr(name, data)
     else:
-        path = tmp_path / "muninn_kb-0.1.0.tar.gz"
+        path = tmp_path / "muninn_kb-0.2.0.tar.gz"
         members = {"src/" + name: b"" for name in audit.source_modules()}
         members.update(legal)
         members.update({"README.md": b"# Muninn\n", "pyproject.toml": b"",
                         "PKG-INFO": metadata(audit)})
         with tarfile.open(path, "w:gz") as archive:
             for name, data in members.items():
-                info = tarfile.TarInfo("muninn_kb-0.1.0/" + name)
+                info = tarfile.TarInfo("muninn_kb-0.2.0/" + name)
                 info.size = len(data)
                 archive.addfile(info, io.BytesIO(data))
     return path

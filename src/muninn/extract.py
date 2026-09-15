@@ -20,6 +20,7 @@ before publication.
 from __future__ import annotations
 
 import fnmatch
+import hashlib
 import os
 import re
 
@@ -190,6 +191,31 @@ def available() -> bool:
         return True
     except Exception:
         return False
+
+
+def parser_issues() -> list[str]:
+    """Verify representative grammars with fixed bytes, without scanning user files."""
+    if not available():
+        return ["The tree-sitter packages cannot be imported."]
+    samples = {
+        "python": b"def greet():\n    return 1\n",
+        "javascript": b"function greet() { return 1; }",
+        "typescript": b"function greet(): number { return 1; }",
+        "rust": b"fn greet() -> i32 { 1 }",
+        "go": b"package main\nfunc greet() int { return 1 }\n",
+        "csharp": b"class Greeting { int Value() { return 1; } }",
+        "yaml": b"greeting: hello\n",
+        "embeddedtemplate": b"<p><%= greeting %></p>",
+    }
+    issues = []
+    for language, sample in samples.items():
+        try:
+            tree = _parser(language).parse(sample)
+            if tree.root_node.has_error or tree.root_node.end_byte != len(sample):
+                issues.append(language + ": the syntax sample did not parse.")
+        except Exception:  # noqa: BLE001 - Report any grammar compatibility failure through diagnostics.
+            issues.append(language + ": the grammar could not load or parse.")
+    return issues
 
 
 def languages() -> list[str]:
@@ -1575,7 +1601,8 @@ def _is_test_path(path: str) -> bool:
             or ".test." in low or ".spec." in low)
 
 
-def import_graph(bundle, graph: dict, subdir: str = "extracted") -> tuple[int, int]:
+def import_graph(bundle, graph: dict, subdir: str = "extracted", *,
+                 scoped: bool = False) -> tuple[int, int]:
     """Write an extracted graph as OKF notes under the requested subdirectory.
 
 Each note retains its node provenance and confidence. Typed relationships use
@@ -1607,7 +1634,7 @@ The return value reports written and skipped notes.
             return f"{label} ({stem})"
         return label
 
-    import_seen: set[tuple[str, str]] = set()
+    import_seen: set[tuple] = set()
 
     def plan(nid, node, label):
         # lang is a path component: sanitize to alnum so it can never carry a
@@ -1623,13 +1650,18 @@ The return value reports written and skipped notes.
             # The same import target from several files is one knowledge item.
             # first node writes the note, the rest merge into it (each module's
             # `imports [[target]]` line still resolves to it by title)
-            key = (lang, label.lower())
+            key = (lang, label.lower(), str(node.get("source_file", "")) if scoped else "")
             if key in import_seen:
                 return None
             import_seen.add(key)
         # model-written notes live under inferred/: the folder must not
         # contradict the frontmatter for anyone browsing the vault
-        eff_subdir = "inferred" if prov == "inferred" else subdir
+        eff_subdir = "inferred" if prov == "inferred" and not scoped else subdir
+        if scoped:
+            source_id = hashlib.sha256(str(node.get("source_file", "")).encode()).hexdigest()[:20]
+            eff_subdir += "/" + source_id
+            if prov == "inferred":
+                eff_subdir += "/inferred"
         meta = {"type": _clean(node.get("kind")) or "concept",
                 "title": _heading_title(node, label),
                 "provenance": prov,
@@ -1646,7 +1678,7 @@ The return value reports written and skipped notes.
             body_lines += [content, ""]
         return f"{eff_subdir}/{lang}", meta, body_lines
 
-    return write_notes(bundle, nodes, edges_by_src, plan)
+    return write_notes(bundle, nodes, edges_by_src, plan, qualify_links=scoped)
 
 
 # -- the later, optional LLM enrichment layer (see enrich.py) ----------------

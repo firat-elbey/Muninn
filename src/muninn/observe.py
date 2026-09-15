@@ -383,7 +383,7 @@ def _hook_command() -> str:
         if (os.path.realpath(archive) == os.path.realpath(main_loader.archive)
                 == os.path.realpath(sys.argv[0])):
             return " ".join(shlex.quote(part) for part in
-                            (os.path.abspath(sys.executable), archive))
+                            (os.path.abspath(sys.executable), "-I", archive))
     return shlex.quote(shutil.which("muninn") or "muninn")
 
 

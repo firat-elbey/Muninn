@@ -360,8 +360,8 @@ class TestStandaloneHookConfig(unittest.TestCase):
                             commands = self.commands(adapter)
                             self.assertEqual(len(commands), 3)
                             for command in commands:
-                                self.assertEqual(command[:5], [
-                                    interpreter, self.archive, "--root",
+                                self.assertEqual(command[:6], [
+                                    interpreter, "-I", self.archive, "--root",
                                     "/tmp/knowledge user's notes", "hook"])
 
     def test_archive_argument_alone_does_not_override_normal_entrypoints(self):

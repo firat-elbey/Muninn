@@ -225,7 +225,8 @@ class TestCliExtractionBranches(_TmpRoot):
 
     def test_build_graphify_without_output_soft_fails(self):
         ok = mock.Mock(returncode=0)
-        with mock.patch("muninn.cli.shutil.which",
+        with mock.patch("muninn.home._toplevel", return_value=(self.src, False)), \
+                mock.patch("muninn.cli.shutil.which",
                         return_value="/nonexistent/graphify"), \
                 mock.patch("muninn.cli.subprocess.run", return_value=ok):
             out, _ = _run_cli("--root", self.root, "build", self.src)

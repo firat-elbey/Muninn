@@ -4,13 +4,52 @@ This procedure publishes Muninn without exposing private repository history,
 pull requests, memory references, or author addresses. The public repository
 starts with one reviewed commit.
 
-This procedure applies to the initial public release only. Do not rename or
+The numbered export procedure applies to the initial public release only. Do not rename or
 replace an existing public repository without a separate migration plan.
 Check the remote identity, visibility, and branch names before any mutation.
 Never push the private working history to the public repository.
 
 Security scans and the clean-history export are pre-publication requirements.
 Local integration and successful tests do not authorize publication.
+
+## Subsequent releases
+
+For an existing public repository, preserve its public history and protection rules.
+Do not repeat the initial export or rename steps.
+
+1. Review the private source changes and complete the local release checks.
+2. Update the private repository first. Record unavailable private CI separately.
+3. Transfer only reviewed file changes onto a branch based on public `main`.
+   Never merge private commits or push private references into the public repository.
+4. Submit a signed-off public pull request. Require all existing protected checks.
+   The `package` check depends on the parser installation matrix.
+5. Merge through the protected path. Require successful CI for the exact resulting public commit.
+6. After explicit release approval, create a new matching version tag and release.
+   Do not overwrite previous tags or assets.
+7. Check the published HTTPS installer in a fresh destination.
+   Require parser diagnostics, real source extraction, source retrieval, and memory preservation.
+8. Remove pending-release notices only after the published installation succeeds.
+   When authorized, synchronize the reviewed file trees. Remove completed temporary branches only with authorization.
+
+The parser matrix tests Python 3.10 and 3.14 on macOS and Linux, each on Intel and ARM64.
+Every matrix job must pass before package checks or publication.
+The exact parser dependency closure is recorded in `requirements-parsers.txt`.
+The full suite also uses these pins. Core checks remain independent of parser installation.
+
+For local parser acceptance, build the archive and obtain compatible wheels from the lock:
+
+```bash
+muninn_parser_assets=$(mktemp -d)
+python tools/build_zipapp.py --output-dir "$muninn_parser_assets"
+python -m pip --isolated download --only-binary=:all: --require-hashes --no-deps \
+  --index-url https://pypi.org/simple -r requirements-parsers.txt --dest "$muninn_parser_assets"
+python tools/check_parser_install.py --assets "$muninn_parser_assets"
+```
+
+The acceptance script uses synthetic source, an isolated home, and temporary memory.
+It checks Python, TypeScript, Rust, Go, and C# extraction, plus TypeScript, Go, and C# symbol retrieval.
+It checks reinstallation, installed instructions, bounded retrieval, core-only conversion, and corrupt-wheel preservation.
+It does not establish native agent authentication, hook trust, or model compliance with the protocol.
 
 ## Release gates
 
@@ -71,7 +110,7 @@ python tools/check_distribution.py dist/*
 muninn_release_dir=$(mktemp -d)
 python tools/build_zipapp.py --output-dir "$muninn_release_dir"
 MUNINN_ASSET_DIR="$muninn_release_dir" \
-MUNINN_INSTALL_DIR="$muninn_release_dir/bin" sh install.sh
+MUNINN_INSTALL_DIR="$muninn_release_dir/bin" sh install.sh --core-only
 "$muninn_release_dir/bin/muninn" --help
 "$muninn_release_dir/bin/muninn" demo
 actionlint
@@ -229,8 +268,8 @@ Close the test pull request without merging it.
 A successful manual workflow run alone does not establish pull-request enforcement.
 
 The issue forms route suspected vulnerabilities to private reporting. Check
-that the private advisory link works before accepting issues. Create labels
-named `bug` and `enhancement` if GitHub did not create them automatically.
+that the private advisory link works before accepting issues.
+If GitHub did not create `bug` and `enhancement` labels, create them.
 
 ## 7. Publish the standalone release
 
@@ -242,8 +281,9 @@ After every release gate passes, obtain explicit release approval.
 Create the release from the exact commit that passed public CI:
 
 ```bash
-gh release create v0.1.0 --repo firat-elbey/muninn --target "$muninn_release_sha" \
-  --title "Muninn 0.1.0" --generate-notes
+muninn_release_version=$(python -c 'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])')
+gh release create "v$muninn_release_version" --repo firat-elbey/muninn --target "$muninn_release_sha" \
+  --title "Muninn $muninn_release_version" --generate-notes
 ```
 
 The release tag must match the version in `pyproject.toml` and the installer.

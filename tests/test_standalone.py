@@ -16,7 +16,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-ASSET = "muninn-0.1.0.pyz"
+ASSET = "muninn-0.2.0.pyz"
 
 
 def builder():
@@ -45,7 +45,7 @@ def install(tmp_path, assets, *arguments, **overrides):
     environment.pop("MUNINN_VERSION", None)
     environment.update(overrides)
     return subprocess.run(
-        ["/bin/sh", str(ROOT / "install.sh"), *arguments], env=environment,
+        ["/bin/sh", str(ROOT / "install.sh"), *(arguments or ("--core-only",))], env=environment,
         capture_output=True, text=True, timeout=20, check=False,
     )
 
@@ -69,7 +69,7 @@ def test_archive_is_deterministic_complete_and_runs_without_site_packages(assets
     )
     with zipfile.ZipFile(archive) as package:
         assert package.comment == b"muninn-kb-standalone-v1"
-        required = {"__main__.py", "muninn-standalone.json", "LICENSE", "NOTICE",
+        required = {"__main__.py", "muninn-standalone.json", "requirements-parsers.txt", "LICENSE", "NOTICE",
                     "THIRD_PARTY_NOTICES.md", "LICENSES/LongMemEval-MIT.txt"}
         modules = {f"muninn/{path.name}" for path in (ROOT / "src/muninn").glob("*.py")}
         assert set(package.namelist()) == required | modules
@@ -81,14 +81,14 @@ def test_archive_is_deterministic_complete_and_runs_without_site_packages(assets
         )
         assert all(info.date_time == (1980, 1, 1, 0, 0, 0) for info in package.infolist())
         metadata = json.loads(package.read("muninn-standalone.json"))
-        assert metadata == {"format": 1, "project": "muninn-kb", "version": "0.1.0"}
+        assert metadata == {"format": 1, "project": "muninn-kb", "version": "0.2.0"}
     for argument in ("--help", "--version", "demo"):
         result = subprocess.run([sys.executable, "-I", "-S", str(archive), argument],
                                 cwd=tmp_path, capture_output=True, text=True, timeout=20,
                                 check=False)
         assert result.returncode == 0, result.stderr
         if argument == "--version":
-            assert result.stdout.strip() == "muninn 0.1.0"
+            assert result.stdout.strip() == "muninn 0.2.0"
 
 
 def test_installer_preserves_configuration_and_supports_spaces_and_reinstall(assets, tmp_path):
@@ -191,7 +191,8 @@ def test_installer_refuses_an_executable_changed_during_upgrade(assets, tmp_path
     monkeypatch.setattr(os, "open", changed_before_write)
     monkeypatch.setenv("MUNINN_ASSET_DIR", str(assets))
     monkeypatch.setenv("MUNINN_INSTALL_DIR", str(target.parent))
-    monkeypatch.setenv("MUNINN_VERSION", "0.1.0")
+    monkeypatch.setenv("MUNINN_VERSION", "0.2.0")
+    monkeypatch.setattr(sys, "argv", ["-", "--core-only"])
     with pytest.raises(SystemExit, match="changed"):
         # Run reviewed source in-process to inject a deterministic filesystem race.
         exec(compile(installer_source(), str(ROOT / "install.sh"), "exec"), {})  # noqa: S102
@@ -199,10 +200,10 @@ def test_installer_refuses_an_executable_changed_during_upgrade(assets, tmp_path
 
 
 def test_installer_rejects_version_mismatch_and_wrong_checksum_name(assets, tmp_path):
-    alternate = "muninn-0.1.1.pyz"
+    alternate = "muninn-0.2.1.pyz"
     shutil.copyfile(assets / ASSET, assets / alternate)
     write_checksum(assets, alternate)
-    result = install(tmp_path, assets, MUNINN_VERSION="0.1.1")
+    result = install(tmp_path, assets, MUNINN_VERSION="0.2.1")
     assert result.returncode != 0
     assert "version" in result.stderr.lower()
     (assets / (ASSET + ".sha256")).write_text("0" * 64 + "  another.pyz\n")
@@ -215,7 +216,7 @@ def test_installer_upgrades_only_recognized_archives(assets, tmp_path):
     assert install(tmp_path, assets).returncode == 0
     source = tmp_path / "source"
     shutil.copytree(ROOT / "src", source / "src")
-    for name in ("LICENSE", "NOTICE", "THIRD_PARTY_NOTICES.md", "LICENSES", "pyproject.toml"):
+    for name in ("LICENSE", "NOTICE", "THIRD_PARTY_NOTICES.md", "LICENSES", "pyproject.toml", "requirements-parsers.txt"):
         path = ROOT / name
         if path.is_dir():
             shutil.copytree(path, source / name)
@@ -223,12 +224,12 @@ def test_installer_upgrades_only_recognized_archives(assets, tmp_path):
             shutil.copyfile(path, source / name)
     for name in ("pyproject.toml", "src/muninn/__init__.py"):
         path = source / name
-        path.write_text(path.read_text().replace('"0.1.0"', '"0.1.1"'))
+        path.write_text(path.read_text().replace('"0.2.0"', '"0.2.1"'))
     builder().build(assets, root=source)
-    result = install(tmp_path, assets, MUNINN_VERSION="0.1.1")
+    result = install(tmp_path, assets, MUNINN_VERSION="0.2.1")
     assert result.returncode == 0, result.stderr
     assert (tmp_path / "user home/.local/bin/muninn").read_bytes() == (
-        assets / "muninn-0.1.1.pyz").read_bytes()
+        assets / "muninn-0.2.1.pyz").read_bytes()
 
 
 def test_installer_downloads_only_versioned_https_assets(assets, tmp_path):
@@ -254,7 +255,7 @@ def test_installer_downloads_only_versioned_https_assets(assets, tmp_path):
     for call in calls:
         assert call[call.index("--proto") + 1] == "=https"
         assert call[call.index("--proto-redir") + 1] == "=https"
-        assert call[-1].startswith("https://github.com/firat-elbey/muninn/releases/download/v0.1.0/")
+        assert call[-1].startswith("https://github.com/firat-elbey/muninn/releases/download/v0.2.0/")
 
 
 def test_download_failure_and_missing_runtime_leave_no_install(assets, tmp_path):
@@ -277,7 +278,7 @@ def test_installer_help_and_version_do_not_download_or_install(tmp_path):
     for argument in ("--help", "--version"):
         result = install(tmp_path, tmp_path / "missing", argument, PATH="/nonexistent")
         assert result.returncode == 0, result.stderr
-        assert "0.1.0" in result.stdout
+        assert "0.2.0" in result.stdout
     for argument in ("--unknown",):
         assert install(tmp_path, "", argument).returncode != 0
     assert install(tmp_path, "", MUNINN_VERSION="../invalid").returncode != 0
@@ -331,10 +332,14 @@ def test_archive_setup_hooks_use_the_running_archive_without_path_dependency(ass
         for groups in hooks.values():
             for group in groups:
                 for hook in group["hooks"]:
-                    assert shlex.split(hook["command"])[:2] == [sys.executable, str(executable)]
+                    assert shlex.split(hook["command"])[:3] == [sys.executable, "-I", str(executable)]
         if relative == ".claude/settings.json":
             command = hooks["SessionStart"][0]["hooks"][0]["command"]
             arguments = shlex.split(command.split(" 2>/dev/null", 1)[0])
+            shadow = tmp_path / "shadow"
+            shadow.mkdir()
+            (shadow / "json.py").write_text("raise RuntimeError('Ambient module executed by hook.')\n")
+            environment["PYTHONPATH"] = str(shadow)
             result = subprocess.run(arguments, env=environment, input='{"session_id":"archive-test"}',
                                     capture_output=True, text=True, timeout=20, check=False)
             assert result.returncode == 0, result.stderr

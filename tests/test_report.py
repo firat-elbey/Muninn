@@ -146,6 +146,7 @@ class TestBuildUnbreakable(unittest.TestCase):
                            return_value="/usr/bin/graphify"), \
                 mock.patch("muninn.cli.subprocess.run",
                            side_effect=legacy_run), \
+                mock.patch("muninn.home._toplevel", return_value=(scanned, False)), \
                 redirect_stdout(buf):
             os.environ.pop("GRAPHIFY_OUT", None)
             cli.main(["--root", kb, "build", scanned])

@@ -1,12 +1,11 @@
 # Muninn
 
 Muninn gives configured agents on the same system shared, persistent memory
-in ordinary Markdown. It takes its name from
+in Markdown. It takes its name from
 [Muninn, Odin's raven whose name means "memory"](https://myndir.uvic.ca/MunN01.html).
 
 All agents that use the same Muninn knowledge-base root share recorded
 decisions, corrections, preferences, session journals, and usage history.
-Work recorded by one agent can inform another in a later session.
 This shares saved knowledge, not live context windows or every conversation
 automatically. [Agent integration](docs/ADAPTERS.md) supports hooks and explicit
 commands.
@@ -22,62 +21,56 @@ Give a coding agent this repository and the following request:
 > machine. Reuse existing knowledge. Preserve my instructions.
 > Check the result with doctor and prime.
 
-The [repository instructions](AGENTS.md) route setup requests through
-installation, agent configuration, and checks. Reading the repository alone
-does not authorize changes to the user's home directory.
+The [repository instructions](AGENTS.md) define setup and checks. Reading them alone does not authorize home-directory changes.
 
-Muninn requires Python 3.10 or later, a POSIX operating system, and curl for
-online installation. The installer does not require pip.
+The default installation includes tree-sitter parsers and their grammars.
+It requires CPython 3.10 through 3.14 with `venv`, macOS or Linux, and curl.
+The parser environment is isolated. No manual pip command is required.
+
+Version 0.2.0 is in preparation. Its release assets are not yet verified for public installation.
 
 Download the versioned installer:
 
 ```bash
 muninn_installer_dir=$(mktemp -d)
 curl --fail --show-error --location --proto '=https' --proto-redir '=https' \
-  https://github.com/firat-elbey/muninn/releases/download/v0.1.0/install.sh \
+  https://github.com/firat-elbey/muninn/releases/download/v0.2.0/install.sh \
   --output "$muninn_installer_dir/install.sh"
 ```
 
-Read the downloaded script before running it. Then install version 0.1.0.
+Read the downloaded script before running it. Then install version 0.2.0.
 Run the demonstration:
 
 ```bash
 sh "$muninn_installer_dir/install.sh"
 "$HOME/.local/bin/muninn" demo
+"$HOME/.local/bin/muninn" doctor --parsers
 ```
+
+Parser diagnostics must report `parsers: ready`.
 
 The installer downloads a Python executable archive and checks its SHA-256
 checksum before installation. Both files come from the same HTTPS release.
 This detects corruption, not a compromised release publisher. Installation
 does not change shell profiles, agent configuration, or existing knowledge.
 An unrelated executable or symbolic link at the destination causes an error.
+The installer downloads pinned binary parsers from PyPI and checks their recorded hashes.
+It verifies syntax parsing before replacing the executable. It does not modify system Python packages.
+After installation, parsing uses local grammars without a network request or model.
 
-The demonstration leaves existing notes unchanged. Its final line identifies
-the temporary bundle that it created. If `~/.local/bin` is absent from `PATH`,
-use the full executable path for subsequent commands.
+For memory without syntax parsing, use `sh "$muninn_installer_dir/install.sh" --core-only`.
+This explicit option retains the dependency-free core and does not require `venv`.
 
-For a source build, use this checkout.
-Then run the demonstration:
-
-```bash
-muninn_build_dir=$(mktemp -d)
-python3 tools/build_zipapp.py --output-dir "$muninn_build_dir"
-python3 "$muninn_build_dir/muninn-0.1.0.pyz" demo
-```
-
-The [installation guide](docs/INSTALL.md) covers custom destinations,
-upgrades, offline installation, and optional extraction dependencies.
-The installer alone does not create agent instructions or hooks.
-Complete agent configuration with `muninn setup`. Then run `muninn doctor --home`.
+The demonstration uses temporary memory.
+The [installation guide](docs/INSTALL.md) covers source builds, upgrades, offline use, and parser requirements.
 
 ## Initial setup
 
-Before agent setup, make the selected installation available as `muninn` in
-each agent's `PATH`. The [installation guide](docs/INSTALL.md#configure-an-agent)
-defines this check. The installer does not change the agent environment.
+Before setup, make this installation available as `muninn` in each agent's `PATH`.
+The installer does not change `PATH` or configure agents.
 
-`muninn setup` creates one knowledge base at `~/muninn` by default and adds
-agent configuration without replacing existing user content:
+`muninn setup` creates `~/muninn` by default.
+It preserves existing canonical personal instructions but replaces its reserved skill file.
 
 ```text
 ~/muninn/
@@ -90,20 +83,38 @@ agent configuration without replacing existing user content:
 ```
 
 Setup connects Claude Code, Codex, Gemini, and Grok to `~/AGENTS.md`.
-It adds supported hooks and preserves existing instructions and unrelated
-configuration. The [adapter guide](docs/ADAPTERS.md) lists the generated paths
-and preservation rules. `muninn uninstall` removes only managed content.
+It adds supported hooks and preserves unrelated configuration.
+The [adapter guide](docs/ADAPTERS.md) lists paths and preservation rules. `muninn uninstall` removes only managed content.
 
 Codex requires a one-time hook review through `/hooks`.
 Grok does not add startup-hook output to model context, so its protocol
 requires an explicit `prime` call.
 
-Use `muninn setup --dry-run` to inspect the planned changes. Use `muninn
-doctor --home` to detect missing or stale configuration.
+Use `muninn setup --dry-run` to inspect changes. After setup, run `muninn doctor --home`.
 
 Transcript import and [style adoption](docs/STYLE_PROTOCOL.md) require separate
 requests. Import applies secret scrubbing. Learned preferences remain local
 and cannot override adopted writing rules.
+
+## Code mapping during coding work
+
+The installed protocol tells agents to map code for implementation, debugging, reviews, tests, and source questions.
+It tells agents to skip source scans during ordinary conversation, writing, and non-coding research.
+General memory remains available for those tasks. The agent selects the task type. Muninn does not classify conversations automatically.
+
+For an unfamiliar codebase, an agent maps the smallest relevant source folder:
+
+```bash
+muninn doctor --parsers
+muninn --root ~/kb extract ./src --into ~/kb
+muninn --root ~/kb source search "Where is ledger state restored?" --path ./src --budget 900
+```
+
+Extraction saves project-scoped structural notes and relationships. Source search returns bounded excerpts with paths and line references.
+For a known symbol, use `source search "SymbolName" --mode symbol` with the same root and source path.
+Agents reuse existing maps and refresh affected folders after structural changes.
+Parsing does not execute the project or prove its runtime behavior.
+Only code and documentation approved for the selected knowledge base belong in a saved map.
 
 ## Building and querying knowledge
 
@@ -134,18 +145,8 @@ Inferred concepts receive weight 0.5. Deterministically extracted facts retain
 weight 1.0. The [enrichment guide](docs/ENRICH.md) defines validation,
 provider order, and privacy controls.
 
-Persistent source retrieval searches a repository without copying its source
-files into Markdown notes:
-
-```bash
-muninn --root ~/kb source search \
-    "Where is immutable ledger state restored?" --path . --budget 1200
-```
-
-The first query builds an atomic SQLite index under `.muninn/`.
-Later queries reopen or refresh it. The default hybrid preserves the
-highest BM25F result and then combines BM25F with exact path and symbol
-matches. `--json` returns structured results.
+Source retrieval stores a rebuildable SQLite index under `.muninn/` without copying source into Markdown notes.
+The default hybrid preserves the highest BM25F result. `--json` returns structured results.
 
 ## Why choose Muninn?
 
@@ -161,8 +162,7 @@ matches. `--json` returns structured results.
 [GBrain](https://github.com/garrytan/gbrain) and
 [Basic Memory](https://github.com/basicmachines-co/basic-memory) also support
 local, editable knowledge. Locality and cross-agent use are not unique to
-Muninn. Its design suits users who want an inspectable memory mechanism
-without a required service or model-based ingestion pipeline.
+Muninn. Neither a service nor model-based ingestion is required.
 
 Muninn does not provide hosted accounts, authenticated user isolation, or
 automatic conversation compression. It has no matched evidence of better
@@ -170,20 +170,8 @@ answer quality or lower total cost than competing memory products.
 The [product comparison](docs/COMPARISON-2026-09.md) distinguishes design
 choices from benchmark claims.
 
-## Design
-
-Muninn separates four forms of state:
-
-1. Knowledge uses [Open Knowledge Format (OKF)
-   v0.2](https://github.com/GoogleCloudPlatform/open-knowledge-format)
-   Markdown. The files remain editable, reviewable in Git, and readable in
-   Obsidian.
-2. Usage events use an append-only ledger under `.muninn/`, separate from the
-   knowledge files. Agents at the same root share this ledger.
-   Removing it leaves the Markdown knowledge intact.
-3. Search indexes and `state.json` are derived caches. Muninn can rebuild them from the Markdown and ledger.
-4. Muninn labels optional model output `inferred` and keeps it separate from
-   deterministically extracted facts.
+The [specification](SPEC.md) defines the separation between portable
+[OKF v0.2](https://github.com/GoogleCloudPlatform/open-knowledge-format) knowledge, usage events, and rebuildable caches.
 
 ## Evaluation results
 
@@ -206,10 +194,8 @@ limits](docs/EVIDENCE.md) define the supported public statements.
 
 ## Learning from use
 
-Independent reads, edits, outcomes, and co-use provide bounded ranking
-signals. Serving a pack is not evidence of use. Session review compares
-served context with independently used context. Supersession excludes obsolete
-notes from ordinary recall without deleting them.
+Independent use provides bounded ranking signals. Session review compares served context with independently used context.
+Serving a pack is not evidence of use. Supersession excludes obsolete notes without deleting them.
 
 Repeated feedback can promote a local style rule after three observations
 across at least two identified sessions. The [specification](SPEC.md) defines
@@ -242,9 +228,8 @@ coverage gate. This measures test execution, not memory accuracy.
 [CONTRIBUTING.md](CONTRIBUTING.md) defines the test, audit, and Developer
 Certificate of Origin requirements. The [MIT License](LICENSE) governs
 Muninn's original work. [Third-party notices](THIRD_PARTY_NOTICES.md) identify
-included benchmark material. [Evaluation sources and
+benchmark and parser material. [Evaluation sources and
 licenses](eval/README.md) document excluded upstream data.
 
-The [public release procedure](docs/PUBLIC-RELEASE.md) creates a one-commit
-repository without private history or memory references.
+The [release procedure](docs/PUBLIC-RELEASE.md) preserves the boundary between public source and private history.
 [Prior art](docs/PRIOR-ART.md) documents related systems.

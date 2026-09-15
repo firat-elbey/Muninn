@@ -14,6 +14,8 @@ Inspecting, evaluating, or contributing to this repository does not authorize se
 1. Check the existing executable, knowledge-base root, and agent configuration.
    Reuse the intended installation and existing memory.
 2. If an executable is missing, build from the reviewed checkout or use the documented release installer.
+   Use the default parser-complete profile unless the user requests core-only memory.
+   A Python archive alone is not a parser-complete installation.
    Do not replace an unrelated executable or move existing memory.
 3. Before setup, read the guide's preservation checks.
    Inspect `setup --dry-run` with the selected root.
@@ -22,10 +24,13 @@ Inspecting, evaluating, or contributing to this repository does not authorize se
    Check the selected executable in the actual agent environment.
    Do not infer the desktop agent's `PATH` from a terminal session.
 5. Run `doctor --home` with the same root.
+   For the default profile, also run `doctor --parsers`.
    Then run `prime` in the current session.
    Report changed paths, preserved conflicts, and required harness approvals or restarts.
 
 Do not import transcripts, adopt a style repository, or change unrelated agent configuration without separate authorization.
+During coding work, use the installed protocol's scoped extraction and source-search procedure.
+For non-coding tasks, do not scan code. General memory retrieval remains applicable.
 If custom instruction locations or overrides prevent safe setup, report the conflict before changing those files.
 The remaining sections govern repository contributions, not home installation.
 
@@ -43,7 +48,7 @@ The remaining sections govern repository contributions, not home installation.
 | `src/muninn/journal.py` | Threads, episodes, and transcript import |
 | `src/muninn/home.py` | Project rooms, registration, adoption, and pointers |
 | `src/muninn/style.py` | User-owned style contracts and managed instruction blocks |
-| `src/muninn/extract.py` | Optional deterministic tree-sitter extraction |
+| `src/muninn/extract.py` | Deterministic tree-sitter extraction, included in the default installation |
 | `src/muninn/code_search.py` | In-memory BM25F, exact, and relationship retrieval |
 | `src/muninn/persistent_code_search.py` | Rebuildable SQLite source index |
 | `src/muninn/source_retrieval.py` | Index freshness, storage, and bounded excerpts |

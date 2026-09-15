@@ -66,6 +66,7 @@ def build(output_dir: Path, *, root: Path = ROOT) -> Path:
     """Include only source modules, the entry point, release identity, and legal files."""
     release = version(root)
     members = {name: (root / name).read_bytes() for name in LEGAL_FILES}
+    members["requirements-parsers.txt"] = (root / "requirements-parsers.txt").read_bytes()
     for path in sorted((root / "src/muninn").glob("*.py")):
         if path.is_symlink() or not path.is_file():
             raise ValueError("A source module is not a regular file.")

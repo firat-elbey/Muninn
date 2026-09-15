@@ -4,9 +4,13 @@ An agent can install Muninn and configure its memory protocol from this guide.
 Installing the executable alone does not create `AGENTS.md` or hooks.
 The separate `muninn setup` command creates those files within its documented scope.
 
-The standalone installer installs Muninn without pip. Python 3.10 or later
-must already be available as `python3` on a POSIX system. Online installation
-also requires curl and access to GitHub releases.
+The default installer includes syntax parsers in an isolated Python environment.
+It requires CPython 3.10 through 3.14 with `venv`, available as `python3` on macOS or Linux.
+The release checks cover Intel and ARM64 systems on both operating systems.
+Online installation requires curl, GitHub releases, and PyPI access.
+The installer uses Python's bundled pip internally. It does not require an existing pip executable or a manual package installation.
+If Python omits `venv` or `ensurepip`, install the operating system's Python venv package before the default installation.
+The explicit `--core-only` option requires only Python 3.10 or later on POSIX.
 
 ## Instructions for a coding agent
 
@@ -18,27 +22,30 @@ If the user requests only the executable, stop after installation.
    The repository's `CLAUDE.md` and `GEMINI.md` already link to `AGENTS.md`.
    If the client does not discover these files, read them explicitly.
 2. Check `command -v muninn` and the selected executable's `--help` output.
-   Reuse the intended installation if it supports the required commands.
+   If the intended installation supports the required commands, reuse it.
    Do not upgrade or replace another installation without authorization.
 3. Find the existing knowledge-base root in the user's adopted instructions or `MUNINN_HOME`.
    Reuse that root and its canonical instruction file.
    If existing roots conflict, ask the user which root to use.
-4. If no executable exists, use [the reviewed checkout](#build-or-install-offline) or [a published release](#install-a-release).
+4. If no executable exists, use [the reviewed checkout](INSTALL-OPTIONS.md#build-or-install-offline) or [a published release](#install-a-release).
    Do not claim that pending release assets are available.
 5. For an authorized setup request, complete [the configuration procedure](#configure-an-agent).
    Report the executable, root, changed paths, checks, conflicts, and remaining user actions.
 
-Do not import transcripts, adopt a style repository, migrate memory, or install optional dependencies without separate authorization.
+The default installation request includes the pinned parsers. Do not substitute `--core-only` unless the user requests memory without parsing.
+Do not import transcripts, adopt a style repository, migrate memory, or install other optional dependencies without separate authorization.
 Do not copy private instructions or knowledge into this repository.
 
 ## Install a release
 
-Download the version 0.1.0 installer:
+Version 0.2.0 is in preparation. Its release assets are not yet verified for public installation.
+
+Download the version 0.2.0 installer:
 
 ```bash
 muninn_installer_dir=$(mktemp -d)
 curl --fail --show-error --location --proto '=https' --proto-redir '=https' \
-  https://github.com/firat-elbey/muninn/releases/download/v0.1.0/install.sh \
+  https://github.com/firat-elbey/muninn/releases/download/v0.2.0/install.sh \
   --output "$muninn_installer_dir/install.sh"
 ```
 
@@ -47,17 +54,29 @@ Read the downloaded script. Then run the installer and demonstration:
 ```bash
 sh "$muninn_installer_dir/install.sh"
 "$HOME/.local/bin/muninn" demo
+"$HOME/.local/bin/muninn" doctor --parsers
 ```
 
 The demonstration shows changes to retrieval in a temporary knowledge base.
 It does not change existing notes. The installer does not run `setup`, edit
 shell profiles, or install a background service.
 
-The installer downloads `muninn-0.1.0.pyz` and
-`muninn-0.1.0.pyz.sha256`. It checks the checksum and archive version before
+The installer downloads `muninn-0.2.0.pyz` and
+`muninn-0.2.0.pyz.sha256`. It checks the checksum and archive version before
 it installs the executable. Both assets come from the same HTTPS release.
 The checksum detects corruption, not a compromised publisher. The archive
 contains the core source and license notices, not a Python runtime.
+
+The archive also contains `requirements-parsers.txt`, which pins all five parser packages and permitted wheel hashes.
+The installer creates a private `.muninn-runtime-*` directory beside the executable.
+It installs only binary wheels into that environment and tests eight representative grammars.
+The executable uses that environment without shell activation. Other Python installations remain unchanged.
+A parser download, compatibility, hash, or syntax failure leaves the previous executable intact.
+The installer never falls back to core-only without an explicit request.
+
+Successful diagnostics report `parsers: ready`. They parse fixed samples without reading source files or changing memory.
+These diagnostics do not guarantee support for every language or verify arbitrary repository behavior.
+If diagnostics fail, read the installer requirements. Then repeat the default installation.
 
 ## Configure an agent
 
@@ -84,10 +103,12 @@ Before setup, inspect the intended paths without exposing private content:
 
 The hook events are `SessionStart`, `PostToolUse`, and `SessionEnd`.
 Setup targets all supported clients, not only the client that runs it.
+The managed pointer requires both `prime` and `skill`, so every supported client can retrieve the full protocol.
+Setup refreshes recognized legacy pointers without changing surrounding personal instructions.
 
 If the skill contains user changes, obtain approval for a preservation plan before setup.
-If instructions have damaged markers, stop before setup and report the conflict.
-If existing agent files differ from the canonical file, preserve them and request a reviewed merge.
+If instructions have damaged markers, stop before setup. Report the conflict.
+If existing agent files differ from the canonical file, preserve them. Request a reviewed merge.
 Do not delete user files to make diagnostics pass.
 
 Setup targets the fixed home paths listed here.
@@ -107,7 +128,7 @@ command -v muninn
 ```
 
 The output must identify the selected executable. Restart each agent with
-that environment and repeat the check there. Desktop agents do not necessarily
+that environment. Repeat the check there. Desktop agents do not necessarily
 inherit the terminal environment. Agent instructions use the bare `muninn`
 command, even though standalone setup binds hooks to the running archive.
 
@@ -136,6 +157,10 @@ Within the authorized scope, apply setup:
 "$muninn_bin" --root "$muninn_brain" prime
 ```
 
+For a parser-complete installation, also run `"$muninn_bin" doctor --parsers`.
+After an upgrade, repeat authorized setup to refresh managed instructions and the Muninn skill.
+Restart agents that cache instructions. Preserve and review any conflicting custom instructions before a merge.
+
 Successful diagnostics report `home configuration: valid`.
 Setup exits with status 1 when protocol markers, instruction paths, or hook configuration remain unresolved.
 It preserves conflicting files and reports incomplete configuration.
@@ -157,9 +182,20 @@ Gemini receives instructions, but setup does not install Gemini lifecycle hooks.
 For any client without a supplied context pack, run `prime` explicitly.
 Restart clients that load instructions only at session start.
 
+During coding work, check that the agent follows the generated source-mapping procedure.
+It uses `extract <code-path> --into <brain>` for structural notes and `source search` for bounded excerpts.
+For a known definition, check retrieval with `source search "SymbolName" --mode symbol` using the same root and source path.
+The agent selects the relevant source folder and reuses existing maps.
+For non-coding tasks, the protocol excludes code scans while retaining general memory retrieval.
+This boundary is an agent instruction, not automatic task classification or an operating-system access control.
+
 Report disk configuration and actual agent use separately.
 List any remaining PATH, discovery, restart, or hook-approval requirement.
 The [adapter guide](ADAPTERS.md) describes the lifecycle integration.
+
+Version 0.2.0 separates saved maps by project and relative source file. Git subfolder scans retain repository-relative resource paths.
+Existing unscoped notes remain unchanged. Review those older notes separately. Setup does not migrate or delete them.
+Refresh updates extracted facts but does not remove every stale note after source deletion or renaming.
 
 ## Remove agent integration
 
@@ -169,65 +205,9 @@ It preserves memory, backups, regular client files, and the canonical instructio
 The executable also remains installed.
 
 The canonical file can still contain Muninn protocol, pointer, or style blocks.
-Review and remove those instructions separately if you want to stop their use.
+If you want to stop their use, review those instructions. Then remove the Muninn instructions.
 Preserve unrelated prose and existing memory.
 
-## Choose a destination or version
+## Other installation options
 
-The default destination is `~/.local/bin/muninn`. To use a different
-directory, set `MUNINN_INSTALL_DIR`:
-
-```bash
-MUNINN_INSTALL_DIR="$HOME/tools/muninn/bin" \
-  sh "$muninn_installer_dir/install.sh"
-"$HOME/tools/muninn/bin/muninn" demo
-```
-
-`MUNINN_VERSION` selects a published version without the leading `v`.
-The installer defaults to `0.1.0`, not an unpinned latest release.
-
-The installer can replace a recognized standalone Muninn archive. It refuses
-symbolic links, directories, and unrelated executables. If an existing pipx,
-editable, or custom installation occupies the destination, choose a separate
-directory. Do not overwrite the existing installation to resolve a PATH
-conflict. Use the full path for manual commands. Before agent setup, place
-the selected directory first in that agent's `PATH`.
-
-Use an installation directory that you control. Do not modify its executable
-while the installer runs. Upgrades recheck the existing content before
-replacement, but do not isolate the destination from another local writer.
-
-## Build or install offline
-
-From a reviewed checkout, build the versioned archive and checksum:
-
-```bash
-muninn_build_dir=$(mktemp -d)
-python3 tools/build_zipapp.py --output-dir "$muninn_build_dir"
-python3 "$muninn_build_dir/muninn-0.1.0.pyz" demo
-```
-
-For offline installation, place both release assets in one trusted directory.
-Point `MUNINN_ASSET_DIR` at that directory:
-
-```bash
-MUNINN_ASSET_DIR="$muninn_build_dir" \
-MUNINN_INSTALL_DIR="$HOME/.local/bin" \
-  sh install.sh
-"$HOME/.local/bin/muninn" demo
-```
-
-The executable remains in the installation directory after the build directory is removed.
-Continue with [agent configuration](#configure-an-agent) only when the user authorizes setup.
-
-Offline installation performs the same checksum and version checks. A failed
-download or checksum leaves the existing executable unchanged. After an
-error, read its diagnostic and obtain a fresh copy from the trusted release.
-
-## Optional dependencies
-
-The archive includes core memory, journals, recall, setup, and source search.
-It does not bundle tree-sitter, Graphify, or model providers. Optional syntax
-extraction requires additional dependencies in the selected Python environment.
-The [contribution guide](../CONTRIBUTING.md) describes package-based development.
-Core installation and use do not require PyPI publication.
+The [options guide](INSTALL-OPTIONS.md) covers custom destinations, upgrades, source builds, offline wheels, and explicit core-only installation.

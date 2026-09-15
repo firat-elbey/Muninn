@@ -201,16 +201,29 @@ def _code_span(command: str) -> str:
     return f"{fence}{command}{fence}"
 
 
-def pointer_lines(home: str, room_rel: str | None = None) -> str:
-    """Return the two-line pointer appended to an existing instruction file."""
+def _pointer_lines(home: str, room_rel: str | None = None,
+                   protocol: bool = True) -> str:
     where = f" (room: {room_rel})" if room_rel else ""
     prime = _code_span(f"muninn --root {shlex.quote(home)} prime")
-    return (f"{POINTER_MARK}: this workspace is organized by a muninn "
-            "home knowledge base -->\n"
+    skill = _code_span(f"muninn --root {shlex.quote(home)} skill")
+    if protocol:
+        instruction = (
+            f"Start every session with {prime}: this retrieves current context. "
+            f"Run {skill}. Follow its complete protocol. "
+            f"Knowledge, threads, and lessons live in {home}{where}.\n")
+    else:
+        instruction = (
             f"Start every session with {prime}: "
             f"knowledge, threads, and lessons live in {home}{where}; log "
             "reactions with `muninn feedback`, milestones with `muninn "
             "journal`.\n")
+    return (f"{POINTER_MARK}: this workspace is organized by a muninn "
+            "home knowledge base -->\n" + instruction)
+
+
+def pointer_lines(home: str, room_rel: str | None = None) -> str:
+    """Return the two-line pointer appended to an existing instruction file."""
+    return _pointer_lines(home, room_rel)
 
 
 def pointer_matches(text: str, root: str) -> bool:
@@ -237,26 +250,89 @@ def pointer_matches(text: str, root: str) -> bool:
             == os.path.realpath(root))
 
 
+def _recognized_pointer(text: str, root: str) -> tuple[int, str | None, bool] | None:
+    """Recognize complete generated lines before replacing managed text."""
+    if not pointer_matches(text, root):
+        return None
+    lines = text.splitlines()
+    index = next(i for i, line in enumerate(lines) if POINTER_MARK in line)
+    line = lines[index + 1]
+    match = re.match(r"Start every session with (?P<fence>`+)(?!`)"
+                     r"(?P<command>.*?)(?P=fence): ", line)
+    pointer_root = shlex.split(match.group("command"))[2]
+    for protocol in (False, True):
+        expected = _pointer_lines(pointer_root, protocol=protocol).splitlines()[1]
+        if line == expected:
+            return index, None, protocol
+        suffix = ("." if protocol else "; log reactions with `muninn feedback`, "
+                  "milestones with `muninn journal`.")
+        start, end = expected[:-len(suffix)] + " (room: ", ")" + suffix
+        if line.startswith(start) and line.endswith(end):
+            room = line[len(start):-len(end)]
+            if room:
+                return index, room, protocol
+    return None
+
+
+def refresh_pointer(text: str, root: str) -> str | None:
+    """Refresh a matching managed pointer, or return None without changing it.
+
+    Only complete generated legacy or current pointers qualify. Personal prose,
+    room metadata, and existing line endings remain unchanged.
+    """
+    details = _recognized_pointer(text, root)
+    if details is None:
+        return None
+    index, room, _protocol = details
+    lines = text.splitlines(keepends=True)
+    original = lines[index + 1]
+    ending = original[len(original.rstrip("\r\n")):]
+    lines[index + 1] = pointer_lines(root, room).splitlines()[1] + ending
+    return "".join(lines)
+
+
+def pointer_routes_protocol(text: str, root: str) -> bool:
+    """Verify that a matching pointer retrieves the complete current protocol."""
+    details = _recognized_pointer(text, root)
+    return details is not None and details[2]
+
+
 def adopt(home: str, project_dir: str) -> tuple[str | None, str]:
     """Register a project room and add the home pointer to its `AGENTS.md`.
 
-    The returned status distinguishes a new file, an appended pointer, and an
-    idempotent repeat.
+    The returned status distinguishes a new file, an appended or refreshed
+    pointer, and an idempotent repeat.
     """
     home = os.path.abspath(os.path.expanduser(home))
     proj = os.path.abspath(os.path.expanduser(project_dir))
     agents = os.path.join(proj, "AGENTS.md")
     try:
-        with open(agents, encoding="utf-8") as fh:
+        with open(agents, encoding="utf-8", newline="") as fh:
             existing = fh.read()
     except OSError:
         existing = ""
-    if POINTER_MARK in existing and not pointer_matches(existing, home):
-        return None, "conflicting pointer"
+    refreshed = None
+    if POINTER_MARK in existing:
+        refreshed = refresh_pointer(existing, home)
+        if refreshed is None:
+            return None, "conflicting pointer"
+        if refreshed != existing:
+            try:
+                status = os.lstat(agents)
+            except OSError:
+                return None, "conflicting pointer"
+            if not stat.S_ISREG(status.st_mode) or status.st_nlink != 1:
+                return None, "conflicting pointer"
     room = room_for(home, proj, create=True)
     if room is None:  # the brain itself, or the room cap: a refused
         return None, "not adopted"  # adopt must not leave a pointer behind
     if POINTER_MARK in existing:
+        if refreshed != existing:
+            try:
+                _atomic_write_text(proj, ["AGENTS.md"], refreshed)
+            except (OSError, ValueError):
+                return None, "conflicting pointer"
+            return room, "refreshed"
         return room, "already wired"
     with open(agents, "a", encoding="utf-8") as fh:
         if existing and not existing.endswith("\n"):
