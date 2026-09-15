@@ -481,34 +481,55 @@ class TestCandidateAuditRegressions(unittest.TestCase):
             f"| [[Person {index:04d}]] | attendee |"
             for index in range(count)
         )
+        body = "| Name | Role |\n| --- | --- |\n" + rows
         self.write(
             "meetings/summit.md",
             "Summit",
             "meeting",
-            "| Name | Role |\n| --- | --- |\n" + rows,
+            body,
         )
         original = relationship_module._infer_relations
+        original_compact = relationship_module._compact_context_view
         context_characters = 0
+        compaction_character_reads = 0
+        processed_targets = []
 
         def measured(source, target, context):
             nonlocal context_characters
+            self.assertEqual(source.path, "meetings/summit.md")
+            self.assertIn("<target>", context.local)
+            processed_targets.append(target.path)
             context_characters += len(context.local)
             return original(source, target, context)
 
-        started = time.perf_counter()
-        with mock.patch.object(
-            relationship_module,
-            "_infer_relations",
-            measured,
-        ):
-            relationship_edges(self.bundle)
-        elapsed = time.perf_counter() - started
+        def measured_compact(text, offsets):
+            nonlocal compaction_character_reads
+            counted = _CountingText(text)
+            result = original_compact(counted, offsets)
+            compaction_character_reads += counted.integer_reads
+            return result
 
+        with (
+            mock.patch.object(relationship_module, "_infer_relations", measured),
+            mock.patch.object(
+                relationship_module, "_compact_context_view", measured_compact,
+            ),
+        ):
+            edges = relationship_edges(self.bundle)
+
+        # Bare attendee cells do not assert a directional attendance relation.
+        self.assertEqual(edges, ())
+        self.assertCountEqual(
+            processed_targets,
+            [f"people/person-{index:04d}.md" for index in range(count)],
+        )
         self.assertLessEqual(
             context_characters,
             count * (relationship_module._MAX_RELATION_CONTEXT_CHARS + 32),
         )
-        self.assertLess(elapsed, 3.0)
+        self.assertGreater(compaction_character_reads, 0)
+        # Count actual reads before bounded contexts hide repeated full-table scans.
+        self.assertLessEqual(compaction_character_reads, len(body) * 2)
 
     def test_adjacent_duplicate_endpoints_are_classified_once(self) -> None:
         self.write("companies/qorp.md", "Qorp", "company", "Company.")
