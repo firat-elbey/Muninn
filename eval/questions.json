@@ -1,0 +1,135 @@
+[
+ {
+  "q": "What port does the aurora postgres database listen on?",
+  "expect": [
+   "7433"
+  ],
+  "kind": "correction"
+ },
+ {
+  "q": "What port does the aurora redis cache run on?",
+  "expect": [
+   "6390"
+  ],
+  "kind": "correction"
+ },
+ {
+  "q": "What is the wireguard vpn endpoint (host and port) for remote access?",
+  "expect": [
+   "wg.example.com:51821",
+   "51821"
+  ],
+  "kind": "correction"
+ },
+ {
+  "q": "Where do the nightly backups go?",
+  "expect": [
+   "minio",
+   "192.0.2.30"
+  ],
+  "kind": "correction"
+ },
+ {
+  "q": "Which software serves LAN DNS on the gateway?",
+  "expect": [
+   "unbound"
+  ],
+  "kind": "correction"
+ },
+ {
+  "q": "How long are service logs retained?",
+  "expect": [
+   "90"
+  ],
+  "kind": "correction"
+ },
+ {
+  "q": "Which message queue do aurora services use for async jobs?",
+  "expect": [
+   "nats"
+  ],
+  "kind": "correction"
+ },
+ {
+  "q": "What host (ip or hostname) runs the aurora postgres primary?",
+  "expect": [
+   "192.0.2.10",
+   "db1.aurora.lan"
+  ],
+  "kind": "link"
+ },
+ {
+  "q": "Roughly how long does a full database restore take?",
+  "expect": [
+   "40"
+  ],
+  "kind": "link"
+ },
+ {
+  "q": "Which bucket do the ml experiment artifacts land in?",
+  "expect": [
+   "aurora-ml"
+  ],
+  "kind": "link"
+ },
+ {
+  "q": "Where do aurora service secrets live?",
+  "expect": [
+   "vault"
+  ],
+  "kind": "pinned"
+ },
+ {
+  "q": "How is direct port access to internal services restricted?",
+  "expect": [
+   "admin vlan",
+   "firewall"
+  ],
+  "kind": "pinned"
+ },
+ {
+  "q": "Through which host and port does external ssh enter the lan?",
+  "expect": [
+   "bastion.example.com",
+   "2222"
+  ],
+  "kind": "ops"
+ },
+ {
+  "q": "Which vlan is the iot wifi mapped to?",
+  "expect": [
+   "30"
+  ],
+  "kind": "ops"
+ },
+ {
+  "q": "What are the steps to onboard a new aurora service?",
+  "expect": [
+   "approle",
+   "scrape"
+  ],
+  "kind": "ops"
+ },
+ {
+  "q": "Who is in the oncall rotation?",
+  "expect": [
+   "dana",
+   "robin"
+  ],
+  "kind": "ops"
+ },
+ {
+  "q": "What channel naming pattern does the worker consume from?",
+  "expect": [
+   "aurora.jobs"
+  ],
+  "kind": "assoc"
+ },
+ {
+  "q": "You are preparing the deploy of the aurora worker. Which host do you watch during rollout?",
+  "expect": [
+   "grafana"
+  ],
+  "kind": "assoc"
+ }
+]

@@ -1,0 +1,1387 @@
+[
+ {
+  "cond": "none",
+  "i": 0,
+  "q": {
+   "q": "What port does the aurora postgres database listen on?",
+   "expect": [
+    "7433"
+   ],
+   "kind": "correction"
+  },
+  "pack_tokens": 0,
+  "answer": "UNKNOWN",
+  "correct": false,
+  "unknown": true
+ },
+ {
+  "cond": "none",
+  "i": 1,
+  "q": {
+   "q": "What port does the aurora redis cache run on?",
+   "expect": [
+    "6390"
+   ],
+   "kind": "correction"
+  },
+  "pack_tokens": 0,
+  "answer": "UNKNOWN",
+  "correct": false,
+  "unknown": true
+ },
+ {
+  "cond": "none",
+  "i": 2,
+  "q": {
+   "q": "What is the wireguard vpn endpoint (host and port) for remote access?",
+   "expect": [
+    "wg.example.com:51821",
+    "51821"
+   ],
+   "kind": "correction"
+  },
+  "pack_tokens": 0,
+  "answer": "UNKNOWN",
+  "correct": false,
+  "unknown": true
+ },
+ {
+  "cond": "none",
+  "i": 3,
+  "q": {
+   "q": "Where do the nightly backups go?",
+   "expect": [
+    "minio",
+    "192.0.2.30"
+   ],
+   "kind": "correction"
+  },
+  "pack_tokens": 0,
+  "answer": "UNKNOWN",
+  "correct": false,
+  "unknown": true
+ },
+ {
+  "cond": "none",
+  "i": 4,
+  "q": {
+   "q": "Which software serves LAN DNS on the gateway?",
+   "expect": [
+    "unbound"
+   ],
+   "kind": "correction"
+  },
+  "pack_tokens": 0,
+  "answer": "UNKNOWN",
+  "correct": false,
+  "unknown": true
+ },
+ {
+  "cond": "none",
+  "i": 5,
+  "q": {
+   "q": "How long are service logs retained?",
+   "expect": [
+    "90"
+   ],
+   "kind": "correction"
+  },
+  "pack_tokens": 0,
+  "answer": "UNKNOWN",
+  "correct": false,
+  "unknown": true
+ },
+ {
+  "cond": "none",
+  "i": 6,
+  "q": {
+   "q": "Which message queue do aurora services use for async jobs?",
+   "expect": [
+    "nats"
+   ],
+   "kind": "correction"
+  },
+  "pack_tokens": 0,
+  "answer": "UNKNOWN",
+  "correct": false,
+  "unknown": true
+ },
+ {
+  "cond": "none",
+  "i": 7,
+  "q": {
+   "q": "What host (ip or hostname) runs the aurora postgres primary?",
+   "expect": [
+    "192.0.2.10",
+    "db1.aurora.lan"
+   ],
+   "kind": "link"
+  },
+  "pack_tokens": 0,
+  "answer": "UNKNOWN",
+  "correct": false,
+  "unknown": true
+ },
+ {
+  "cond": "none",
+  "i": 8,
+  "q": {
+   "q": "Roughly how long does a full database restore take?",
+   "expect": [
+    "40"
+   ],
+   "kind": "link"
+  },
+  "pack_tokens": 0,
+  "answer": "UNKNOWN",
+  "correct": false,
+  "unknown": true
+ },
+ {
+  "cond": "none",
+  "i": 9,
+  "q": {
+   "q": "Which bucket do the ml experiment artifacts land in?",
+   "expect": [
+    "aurora-ml"
+   ],
+   "kind": "link"
+  },
+  "pack_tokens": 0,
+  "answer": "UNKNOWN",
+  "correct": false,
+  "unknown": true
+ },
+ {
+  "cond": "none",
+  "i": 10,
+  "q": {
+   "q": "Where do aurora service secrets live?",
+   "expect": [
+    "vault"
+   ],
+   "kind": "pinned"
+  },
+  "pack_tokens": 0,
+  "answer": "UNKNOWN",
+  "correct": false,
+  "unknown": true
+ },
+ {
+  "cond": "none",
+  "i": 11,
+  "q": {
+   "q": "How is direct port access to internal services restricted?",
+   "expect": [
+    "admin vlan",
+    "firewall"
+   ],
+   "kind": "pinned"
+  },
+  "pack_tokens": 0,
+  "answer": "UNKNOWN",
+  "correct": false,
+  "unknown": true
+ },
+ {
+  "cond": "none",
+  "i": 12,
+  "q": {
+   "q": "Through which host and port does external ssh enter the lan?",
+   "expect": [
+    "bastion.example.com",
+    "2222"
+   ],
+   "kind": "ops"
+  },
+  "pack_tokens": 0,
+  "answer": "UNKNOWN",
+  "correct": false,
+  "unknown": true
+ },
+ {
+  "cond": "none",
+  "i": 13,
+  "q": {
+   "q": "Which vlan is the iot wifi mapped to?",
+   "expect": [
+    "30"
+   ],
+   "kind": "ops"
+  },
+  "pack_tokens": 0,
+  "answer": "UNKNOWN",
+  "correct": false,
+  "unknown": true
+ },
+ {
+  "cond": "none",
+  "i": 14,
+  "q": {
+   "q": "What are the steps to onboard a new aurora service?",
+   "expect": [
+    "approle",
+    "scrape"
+   ],
+   "kind": "ops"
+  },
+  "pack_tokens": 0,
+  "answer": "UNKNOWN",
+  "correct": false,
+  "unknown": true
+ },
+ {
+  "cond": "none",
+  "i": 15,
+  "q": {
+   "q": "Who is in the oncall rotation?",
+   "expect": [
+    "dana",
+    "robin"
+   ],
+   "kind": "ops"
+  },
+  "pack_tokens": 0,
+  "answer": "UNKNOWN",
+  "correct": false,
+  "unknown": true
+ },
+ {
+  "cond": "none",
+  "i": 16,
+  "q": {
+   "q": "What channel naming pattern does the worker consume from?",
+   "expect": [
+    "aurora.jobs"
+   ],
+   "kind": "assoc"
+  },
+  "pack_tokens": 0,
+  "answer": "The worker consumes from channels matching the pattern `aurora.jobs.*` (NATS Jetstream subjects).",
+  "correct": true,
+  "unknown": false
+ },
+ {
+  "cond": "none",
+  "i": 17,
+  "q": {
+   "q": "You are preparing the deploy of the aurora worker. Which host do you watch during rollout?",
+   "expect": [
+    "grafana"
+   ],
+   "kind": "assoc"
+  },
+  "pack_tokens": 0,
+  "answer": "UNKNOWN",
+  "correct": false,
+  "unknown": true
+ },
+ {
+  "cond": "naive",
+  "i": 0,
+  "q": {
+   "q": "What port does the aurora postgres database listen on?",
+   "expect": [
+    "7433"
+   ],
+   "kind": "correction"
+  },
+  "pack_tokens": 240,
+  "answer": "Port 7433 (moved off the default 5432 during a January hardening pass).",
+  "correct": true,
+  "unknown": false
+ },
+ {
+  "cond": "naive",
+  "i": 1,
+  "q": {
+   "q": "What port does the aurora redis cache run on?",
+   "expect": [
+    "6390"
+   ],
+   "kind": "correction"
+  },
+  "pack_tokens": 201,
+  "answer": "The aurora redis cache runs on port 6390 (custom).",
+  "correct": true,
+  "unknown": false
+ },
+ {
+  "cond": "naive",
+  "i": 2,
+  "q": {
+   "q": "What is the wireguard vpn endpoint (host and port) for remote access?",
+   "expect": [
+    "wg.example.com:51821",
+    "51821"
+   ],
+   "kind": "correction"
+  },
+  "pack_tokens": 217,
+  "answer": "The wireguard VPN endpoint for remote access is **wg.example.com:51821** (migrated from the original vpn.example.com:51820 after an ISP change).",
+  "correct": true,
+  "unknown": false
+ },
+ {
+  "cond": "naive",
+  "i": 3,
+  "q": {
+   "q": "Where do the nightly backups go?",
+   "expect": [
+    "minio",
+    "192.0.2.30"
+   ],
+   "kind": "correction"
+  },
+  "pack_tokens": 214,
+  "answer": "Nightly backups go to the minio object store at 192.0.2.30:9000, bucket aurora-backups (moved off the NAS in March).",
+  "correct": true,
+  "unknown": false
+ },
+ {
+  "cond": "naive",
+  "i": 4,
+  "q": {
+   "q": "Which software serves LAN DNS on the gateway?",
+   "expect": [
+    "unbound"
+   ],
+   "kind": "correction"
+  },
+  "pack_tokens": 199,
+  "answer": "Unbound serves LAN DNS on the gateway (replacing dnsmasq for DNSSEC support).",
+  "correct": true,
+  "unknown": false
+ },
+ {
+  "cond": "naive",
+  "i": 5,
+  "q": {
+   "q": "How long are service logs retained?",
+   "expect": [
+    "90"
+   ],
+   "kind": "correction"
+  },
+  "pack_tokens": 225,
+  "answer": "UNKNOWN\n\nThe context references a current log retention policy file (`decisions/logs.md`), but the actual retention duration is not included in the provided context.",
+  "correct": false,
+  "unknown": true
+ },
+ {
+  "cond": "naive",
+  "i": 6,
+  "q": {
+   "q": "Which message queue do aurora services use for async jobs?",
+   "expect": [
+    "nats"
+   ],
+   "kind": "correction"
+  },
+  "pack_tokens": 222,
+  "answer": "Aurora services use NATS JetStream for async jobs (it replaced RabbitMQ for simpler operations).",
+  "correct": true,
+  "unknown": false
+ },
+ {
+  "cond": "naive",
+  "i": 7,
+  "q": {
+   "q": "What host (ip or hostname) runs the aurora postgres primary?",
+   "expect": [
+    "192.0.2.10",
+    "db1.aurora.lan"
+   ],
+   "kind": "link"
+  },
+  "pack_tokens": 236,
+  "answer": "The Aurora postgres primary runs on 192.0.2.10 (hostname db1.aurora.lan).",
+  "correct": true,
+  "unknown": false
+ },
+ {
+  "cond": "naive",
+  "i": 8,
+  "q": {
+   "q": "Roughly how long does a full database restore take?",
+   "expect": [
+    "40"
+   ],
+   "kind": "link"
+  },
+  "pack_tokens": 250,
+  "answer": "A full database restore takes approximately 40 minutes.",
+  "correct": true,
+  "unknown": false
+ },
+ {
+  "cond": "naive",
+  "i": 9,
+  "q": {
+   "q": "Which bucket do the ml experiment artifacts land in?",
+   "expect": [
+    "aurora-ml"
+   ],
+   "kind": "link"
+  },
+  "pack_tokens": 216,
+  "answer": "The ML experiment artifacts land in the `aurora-ml` minio bucket.",
+  "correct": true,
+  "unknown": false
+ },
+ {
+  "cond": "naive",
+  "i": 10,
+  "q": {
+   "q": "Where do aurora service secrets live?",
+   "expect": [
+    "vault"
+   ],
+   "kind": "pinned"
+  },
+  "pack_tokens": 212,
+  "answer": "All service secrets live in vault at vault.aurora.lan; nothing in .env files or the repo.",
+  "correct": true,
+  "unknown": false
+ },
+ {
+  "cond": "naive",
+  "i": 11,
+  "q": {
+   "q": "How is direct port access to internal services restricted?",
+   "expect": [
+    "admin vlan",
+    "firewall"
+   ],
+   "kind": "pinned"
+  },
+  "pack_tokens": 238,
+  "answer": "Every internal service sits behind the SSO proxy; direct port access is firewalled to the admin VLAN only.",
+  "correct": true,
+  "unknown": false
+ },
+ {
+  "cond": "naive",
+  "i": 12,
+  "q": {
+   "q": "Through which host and port does external ssh enter the lan?",
+   "expect": [
+    "bastion.example.com",
+    "2222"
+   ],
+   "kind": "ops"
+  },
+  "pack_tokens": 237,
+  "answer": "External SSH enters the LAN through the bastion at bastion.example.com on port 2222.",
+  "correct": true,
+  "unknown": false
+ },
+ {
+  "cond": "naive",
+  "i": 13,
+  "q": {
+   "q": "Which vlan is the iot wifi mapped to?",
+   "expect": [
+    "30"
+   ],
+   "kind": "ops"
+  },
+  "pack_tokens": 201,
+  "answer": "aurora-iot is mapped to VLAN 30 (isolated).",
+  "correct": true,
+  "unknown": false
+ },
+ {
+  "cond": "naive",
+  "i": 14,
+  "q": {
+   "q": "What are the steps to onboard a new aurora service?",
+   "expect": [
+    "approle",
+    "scrape"
+   ],
+   "kind": "ops"
+  },
+  "pack_tokens": 229,
+  "answer": "Register in the SSO proxy, add a Prometheus scrape config, create a Vault AppRole, add the NATS subject to the allowlist, and add a Grafana dashboard.",
+  "correct": true,
+  "unknown": false
+ },
+ {
+  "cond": "naive",
+  "i": 15,
+  "q": {
+   "q": "Who is in the oncall rotation?",
+   "expect": [
+    "dana",
+    "robin"
+   ],
+   "kind": "ops"
+  },
+  "pack_tokens": 214,
+  "answer": "Dana and Robin rotate weekly with handoffs on Mondays.",
+  "correct": true,
+  "unknown": false
+ },
+ {
+  "cond": "naive",
+  "i": 16,
+  "q": {
+   "q": "What channel naming pattern does the worker consume from?",
+   "expect": [
+    "aurora.jobs"
+   ],
+   "kind": "assoc"
+  },
+  "pack_tokens": 232,
+  "answer": "UNKNOWN",
+  "correct": false,
+  "unknown": true
+ },
+ {
+  "cond": "naive",
+  "i": 17,
+  "q": {
+   "q": "You are preparing the deploy of the aurora worker. Which host do you watch during rollout?",
+   "expect": [
+    "grafana"
+   ],
+   "kind": "assoc"
+  },
+  "pack_tokens": 245,
+  "answer": "UNKNOWN",
+  "correct": false,
+  "unknown": true
+ },
+ {
+  "cond": "format",
+  "i": 0,
+  "q": {
+   "q": "What port does the aurora postgres database listen on?",
+   "expect": [
+    "7433"
+   ],
+   "kind": "correction"
+  },
+  "pack_tokens": 263,
+  "answer": "The Aurora postgres database listens on port 7433 (moved off the default in a Jan hardening pass).",
+  "correct": true,
+  "unknown": false
+ },
+ {
+  "cond": "format",
+  "i": 1,
+  "q": {
+   "q": "What port does the aurora redis cache run on?",
+   "expect": [
+    "6390"
+   ],
+   "kind": "correction"
+  },
+  "pack_tokens": 231,
+  "answer": "Port 6390.",
+  "correct": true,
+  "unknown": false
+ },
+ {
+  "cond": "format",
+  "i": 2,
+  "q": {
+   "q": "What is the wireguard vpn endpoint (host and port) for remote access?",
+   "expect": [
+    "wg.example.com:51821",
+    "51821"
+   ],
+   "kind": "correction"
+  },
+  "pack_tokens": 241,
+  "answer": "wg.example.com:51821",
+  "correct": true,
+  "unknown": false
+ },
+ {
+  "cond": "format",
+  "i": 3,
+  "q": {
+   "q": "Where do the nightly backups go?",
+   "expect": [
+    "minio",
+    "192.0.2.30"
+   ],
+   "kind": "correction"
+  },
+  "pack_tokens": 230,
+  "answer": "Nightly backups go to the minio object store at 192.0.2.30:9000, bucket aurora-backups.",
+  "correct": true,
+  "unknown": false
+ },
+ {
+  "cond": "format",
+  "i": 4,
+  "q": {
+   "q": "Which software serves LAN DNS on the gateway?",
+   "expect": [
+    "unbound"
+   ],
+   "kind": "correction"
+  },
+  "pack_tokens": 205,
+  "answer": "Unbound serves LAN DNS on the gateway (it replaced dnsmasq to support DNSSEC).",
+  "correct": true,
+  "unknown": false
+ },
+ {
+  "cond": "format",
+  "i": 5,
+  "q": {
+   "q": "How long are service logs retained?",
+   "expect": [
+    "90"
+   ],
+   "kind": "correction"
+  },
+  "pack_tokens": 225,
+  "answer": "UNKNOWN\n\nThe context references a log retention policy document (`decisions/logs.md`) but doesn't include the actual retention period.",
+  "correct": false,
+  "unknown": true
+ },
+ {
+  "cond": "format",
+  "i": 6,
+  "q": {
+   "q": "Which message queue do aurora services use for async jobs?",
+   "expect": [
+    "nats"
+   ],
+   "kind": "correction"
+  },
+  "pack_tokens": 248,
+  "answer": "Aurora services use NATS JetStream for async jobs (it replaced RabbitMQ for simpler ops and key/value storage).",
+  "correct": true,
+  "unknown": false
+ },
+ {
+  "cond": "format",
+  "i": 7,
+  "q": {
+   "q": "What host (ip or hostname) runs the aurora postgres primary?",
+   "expect": [
+    "192.0.2.10",
+    "db1.aurora.lan"
+   ],
+   "kind": "link"
+  },
+  "pack_tokens": 236,
+  "answer": "The Aurora postgres primary runs on 192.0.2.10 (hostname db1.aurora.lan).",
+  "correct": true,
+  "unknown": false
+ },
+ {
+  "cond": "format",
+  "i": 8,
+  "q": {
+   "q": "Roughly how long does a full database restore take?",
+   "expect": [
+    "40"
+   ],
+   "kind": "link"
+  },
+  "pack_tokens": 250,
+  "answer": "A full database restore takes approximately 40 minutes.",
+  "correct": true,
+  "unknown": false
+ },
+ {
+  "cond": "format",
+  "i": 9,
+  "q": {
+   "q": "Which bucket do the ml experiment artifacts land in?",
+   "expect": [
+    "aurora-ml"
+   ],
+   "kind": "link"
+  },
+  "pack_tokens": 216,
+  "answer": "The ML experiment artifacts land in the minio bucket `aurora-ml`.",
+  "correct": true,
+  "unknown": false
+ },
+ {
+  "cond": "format",
+  "i": 10,
+  "q": {
+   "q": "Where do aurora service secrets live?",
+   "expect": [
+    "vault"
+   ],
+   "kind": "pinned"
+  },
+  "pack_tokens": 212,
+  "answer": "All service secrets live in vault at vault.aurora.lan; nothing in .env files or the repo.",
+  "correct": true,
+  "unknown": false
+ },
+ {
+  "cond": "format",
+  "i": 11,
+  "q": {
+   "q": "How is direct port access to internal services restricted?",
+   "expect": [
+    "admin vlan",
+    "firewall"
+   ],
+   "kind": "pinned"
+  },
+  "pack_tokens": 238,
+  "answer": "Every internal service sits behind an SSO proxy, and direct port access is firewalled to the admin VLAN only.",
+  "correct": true,
+  "unknown": false
+ },
+ {
+  "cond": "format",
+  "i": 12,
+  "q": {
+   "q": "Through which host and port does external ssh enter the lan?",
+   "expect": [
+    "bastion.example.com",
+    "2222"
+   ],
+   "kind": "ops"
+  },
+  "pack_tokens": 237,
+  "answer": "All external SSH enters the LAN through the bastion at bastion.example.com port 2222.",
+  "correct": true,
+  "unknown": false
+ },
+ {
+  "cond": "format",
+  "i": 13,
+  "q": {
+   "q": "Which vlan is the iot wifi mapped to?",
+   "expect": [
+    "30"
+   ],
+   "kind": "ops"
+  },
+  "pack_tokens": 201,
+  "answer": "The IoT WiFi (aurora-iot) is mapped to VLAN 30 (isolated).",
+  "correct": true,
+  "unknown": false
+ },
+ {
+  "cond": "format",
+  "i": 14,
+  "q": {
+   "q": "What are the steps to onboard a new aurora service?",
+   "expect": [
+    "approle",
+    "scrape"
+   ],
+   "kind": "ops"
+  },
+  "pack_tokens": 229,
+  "answer": "Register in the SSO proxy, add prometheus scrape config, create a vault approle, add the NATS subject to the allowlist, and add a Grafana dashboard.",
+  "correct": true,
+  "unknown": false
+ },
+ {
+  "cond": "format",
+  "i": 15,
+  "q": {
+   "q": "Who is in the oncall rotation?",
+   "expect": [
+    "dana",
+    "robin"
+   ],
+   "kind": "ops"
+  },
+  "pack_tokens": 214,
+  "answer": "Dana and robin rotate weekly with handoff on Mondays.",
+  "correct": true,
+  "unknown": false
+ },
+ {
+  "cond": "format",
+  "i": 16,
+  "q": {
+   "q": "What channel naming pattern does the worker consume from?",
+   "expect": [
+    "aurora.jobs"
+   ],
+   "kind": "assoc"
+  },
+  "pack_tokens": 232,
+  "answer": "UNKNOWN\n\nThe context indicates the worker consumes jobs from a message queue (nats), but does not specify the channel naming pattern.",
+  "correct": false,
+  "unknown": true
+ },
+ {
+  "cond": "format",
+  "i": 17,
+  "q": {
+   "q": "You are preparing the deploy of the aurora worker. Which host do you watch during rollout?",
+   "expect": [
+    "grafana"
+   ],
+   "kind": "assoc"
+  },
+  "pack_tokens": 245,
+  "answer": "UNKNOWN\n\nThe context describes the Aurora DB host (192.0.2.10) and supporting services, but does not specify which host to monitor during the worker deployment.",
+  "correct": false,
+  "unknown": true
+ },
+ {
+  "cond": "muninn",
+  "i": 0,
+  "q": {
+   "q": "What port does the aurora postgres database listen on?",
+   "expect": [
+    "7433"
+   ],
+   "kind": "correction"
+  },
+  "pack_tokens": 284,
+  "answer": "The Aurora postgres database listens on port 7433.",
+  "correct": true,
+  "unknown": false
+ },
+ {
+  "cond": "muninn",
+  "i": 1,
+  "q": {
+   "q": "What port does the aurora redis cache run on?",
+   "expect": [
+    "6390"
+   ],
+   "kind": "correction"
+  },
+  "pack_tokens": 245,
+  "answer": "The aurora redis cache runs on port 6390 (custom).",
+  "correct": true,
+  "unknown": false
+ },
+ {
+  "cond": "muninn",
+  "i": 2,
+  "q": {
+   "q": "What is the wireguard vpn endpoint (host and port) for remote access?",
+   "expect": [
+    "wg.example.com:51821",
+    "51821"
+   ],
+   "kind": "correction"
+  },
+  "pack_tokens": 262,
+  "answer": "The wireguard VPN endpoint is wg.example.com:51821.",
+  "correct": true,
+  "unknown": false
+ },
+ {
+  "cond": "muninn",
+  "i": 3,
+  "q": {
+   "q": "Where do the nightly backups go?",
+   "expect": [
+    "minio",
+    "192.0.2.30"
+   ],
+   "kind": "correction"
+  },
+  "pack_tokens": 240,
+  "answer": "Nightly backups go to the minio object store at 192.0.2.30:9000, bucket aurora-backups.",
+  "correct": true,
+  "unknown": false
+ },
+ {
+  "cond": "muninn",
+  "i": 4,
+  "q": {
+   "q": "Which software serves LAN DNS on the gateway?",
+   "expect": [
+    "unbound"
+   ],
+   "kind": "correction"
+  },
+  "pack_tokens": 216,
+  "answer": "Unbound serves LAN DNS on the gateway (it replaced dnsmasq for DNSSEC support).",
+  "correct": true,
+  "unknown": false
+ },
+ {
+  "cond": "muninn",
+  "i": 5,
+  "q": {
+   "q": "How long are service logs retained?",
+   "expect": [
+    "90"
+   ],
+   "kind": "correction"
+  },
+  "pack_tokens": 224,
+  "answer": "UNKNOWN",
+  "correct": false,
+  "unknown": true
+ },
+ {
+  "cond": "muninn",
+  "i": 6,
+  "q": {
+   "q": "Which message queue do aurora services use for async jobs?",
+   "expect": [
+    "nats"
+   ],
+   "kind": "correction"
+  },
+  "pack_tokens": 268,
+  "answer": "Aurora services use NATS JetStream for async jobs (it replaced RabbitMQ for simpler operations and key/value storage).",
+  "correct": true,
+  "unknown": false
+ },
+ {
+  "cond": "muninn",
+  "i": 7,
+  "q": {
+   "q": "What host (ip or hostname) runs the aurora postgres primary?",
+   "expect": [
+    "192.0.2.10",
+    "db1.aurora.lan"
+   ],
+   "kind": "link"
+  },
+  "pack_tokens": 257,
+  "answer": "The Aurora postgres primary runs on 192.0.2.10 (hostname db1.aurora.lan).",
+  "correct": true,
+  "unknown": false
+ },
+ {
+  "cond": "muninn",
+  "i": 8,
+  "q": {
+   "q": "Roughly how long does a full database restore take?",
+   "expect": [
+    "40"
+   ],
+   "kind": "link"
+  },
+  "pack_tokens": 271,
+  "answer": "A full database restore takes approximately 40 minutes, according to the restore database runbook.",
+  "correct": true,
+  "unknown": false
+ },
+ {
+  "cond": "muninn",
+  "i": 9,
+  "q": {
+   "q": "Which bucket do the ml experiment artifacts land in?",
+   "expect": [
+    "aurora-ml"
+   ],
+   "kind": "link"
+  },
+  "pack_tokens": 216,
+  "answer": "The ml experiment artifacts land in the minio bucket `aurora-ml`.",
+  "correct": true,
+  "unknown": false
+ },
+ {
+  "cond": "muninn",
+  "i": 10,
+  "q": {
+   "q": "Where do aurora service secrets live?",
+   "expect": [
+    "vault"
+   ],
+   "kind": "pinned"
+  },
+  "pack_tokens": 255,
+  "answer": "All service secrets live in vault at vault.aurora.lan; nothing in .env files or the repo.",
+  "correct": true,
+  "unknown": false
+ },
+ {
+  "cond": "muninn",
+  "i": 11,
+  "q": {
+   "q": "How is direct port access to internal services restricted?",
+   "expect": [
+    "admin vlan",
+    "firewall"
+   ],
+   "kind": "pinned"
+  },
+  "pack_tokens": 252,
+  "answer": "Every internal service sits behind the SSO proxy; direct port access is firewalled to the admin vlan only.",
+  "correct": true,
+  "unknown": false
+ },
+ {
+  "cond": "muninn",
+  "i": 12,
+  "q": {
+   "q": "Through which host and port does external ssh enter the lan?",
+   "expect": [
+    "bastion.example.com",
+    "2222"
+   ],
+   "kind": "ops"
+  },
+  "pack_tokens": 247,
+  "answer": "External SSH enters the LAN through the bastion at bastion.example.com on port 2222.",
+  "correct": true,
+  "unknown": false
+ },
+ {
+  "cond": "muninn",
+  "i": 13,
+  "q": {
+   "q": "Which vlan is the iot wifi mapped to?",
+   "expect": [
+    "30"
+   ],
+   "kind": "ops"
+  },
+  "pack_tokens": 205,
+  "answer": "The IoT WiFi (aurora-iot) is mapped to VLAN 30.",
+  "correct": true,
+  "unknown": false
+ },
+ {
+  "cond": "muninn",
+  "i": 14,
+  "q": {
+   "q": "What are the steps to onboard a new aurora service?",
+   "expect": [
+    "approle",
+    "scrape"
+   ],
+   "kind": "ops"
+  },
+  "pack_tokens": 267,
+  "answer": "Register in the SSO proxy, add prometheus scrape config, create a vault approle, add the NATS subject to the allowlist, and add a Grafana dashboard.",
+  "correct": true,
+  "unknown": false
+ },
+ {
+  "cond": "muninn",
+  "i": 15,
+  "q": {
+   "q": "Who is in the oncall rotation?",
+   "expect": [
+    "dana",
+    "robin"
+   ],
+   "kind": "ops"
+  },
+  "pack_tokens": 214,
+  "answer": "Dana and robin rotate weekly with handoff on Mondays.",
+  "correct": true,
+  "unknown": false
+ },
+ {
+  "cond": "muninn",
+  "i": 16,
+  "q": {
+   "q": "What channel naming pattern does the worker consume from?",
+   "expect": [
+    "aurora.jobs"
+   ],
+   "kind": "assoc"
+  },
+  "pack_tokens": 231,
+  "answer": "The worker consumes from NATS JetStream subjects matching the pattern `aurora.jobs.*`.",
+  "correct": true,
+  "unknown": false
+ },
+ {
+  "cond": "muninn",
+  "i": 17,
+  "q": {
+   "q": "You are preparing the deploy of the aurora worker. Which host do you watch during rollout?",
+   "expect": [
+    "grafana"
+   ],
+   "kind": "assoc"
+  },
+  "pack_tokens": 266,
+  "answer": "UNKNOWN\n\nThe context provides the Aurora DB host (192.0.2.10 / db1.aurora.lan) but doesn't specify which host the worker service runs on or should be monitored during its rollout.",
+  "correct": false,
+  "unknown": true
+ },
+ {
+  "cond": "dump",
+  "i": 0,
+  "q": {
+   "q": "What port does the aurora postgres database listen on?",
+   "expect": [
+    "7433"
+   ],
+   "kind": "correction"
+  },
+  "pack_tokens": 389,
+  "answer": "UNKNOWN",
+  "correct": false,
+  "unknown": true
+ },
+ {
+  "cond": "dump",
+  "i": 1,
+  "q": {
+   "q": "What port does the aurora redis cache run on?",
+   "expect": [
+    "6390"
+   ],
+   "kind": "correction"
+  },
+  "pack_tokens": 389,
+  "answer": "UNKNOWN",
+  "correct": false,
+  "unknown": true
+ },
+ {
+  "cond": "dump",
+  "i": 2,
+  "q": {
+   "q": "What is the wireguard vpn endpoint (host and port) for remote access?",
+   "expect": [
+    "wg.example.com:51821",
+    "51821"
+   ],
+   "kind": "correction"
+  },
+  "pack_tokens": 389,
+  "answer": "UNKNOWN",
+  "correct": false,
+  "unknown": true
+ },
+ {
+  "cond": "dump",
+  "i": 3,
+  "q": {
+   "q": "Where do the nightly backups go?",
+   "expect": [
+    "minio",
+    "192.0.2.30"
+   ],
+   "kind": "correction"
+  },
+  "pack_tokens": 389,
+  "answer": "Nightly backups go to the minio object store at 192.0.2.30:9000, bucket aurora-backups.",
+  "correct": true,
+  "unknown": false
+ },
+ {
+  "cond": "dump",
+  "i": 4,
+  "q": {
+   "q": "Which software serves LAN DNS on the gateway?",
+   "expect": [
+    "unbound"
+   ],
+   "kind": "correction"
+  },
+  "pack_tokens": 389,
+  "answer": "UNKNOWN",
+  "correct": false,
+  "unknown": true
+ },
+ {
+  "cond": "dump",
+  "i": 5,
+  "q": {
+   "q": "How long are service logs retained?",
+   "expect": [
+    "90"
+   ],
+   "kind": "correction"
+  },
+  "pack_tokens": 389,
+  "answer": "Service logs are retained for 90 days in Loki, then dropped.",
+  "correct": true,
+  "unknown": false
+ },
+ {
+  "cond": "dump",
+  "i": 6,
+  "q": {
+   "q": "Which message queue do aurora services use for async jobs?",
+   "expect": [
+    "nats"
+   ],
+   "kind": "correction"
+  },
+  "pack_tokens": 389,
+  "answer": "Aurora services use NATS Jetstream for async jobs (replaced RabbitMQ; producers use subject aurora.jobs.*).",
+  "correct": true,
+  "unknown": false
+ },
+ {
+  "cond": "dump",
+  "i": 7,
+  "q": {
+   "q": "What host (ip or hostname) runs the aurora postgres primary?",
+   "expect": [
+    "192.0.2.10",
+    "db1.aurora.lan"
+   ],
+   "kind": "link"
+  },
+  "pack_tokens": 389,
+  "answer": "UNKNOWN",
+  "correct": false,
+  "unknown": true
+ },
+ {
+  "cond": "dump",
+  "i": 8,
+  "q": {
+   "q": "Roughly how long does a full database restore take?",
+   "expect": [
+    "40"
+   ],
+   "kind": "link"
+  },
+  "pack_tokens": 389,
+  "answer": "UNKNOWN",
+  "correct": false,
+  "unknown": true
+ },
+ {
+  "cond": "dump",
+  "i": 9,
+  "q": {
+   "q": "Which bucket do the ml experiment artifacts land in?",
+   "expect": [
+    "aurora-ml"
+   ],
+   "kind": "link"
+  },
+  "pack_tokens": 389,
+  "answer": "UNKNOWN",
+  "correct": false,
+  "unknown": true
+ },
+ {
+  "cond": "dump",
+  "i": 10,
+  "q": {
+   "q": "Where do aurora service secrets live?",
+   "expect": [
+    "vault"
+   ],
+   "kind": "pinned"
+  },
+  "pack_tokens": 389,
+  "answer": "All service secrets live in vault at vault.aurora.lan; nothing in .env files or the repo.",
+  "correct": true,
+  "unknown": false
+ },
+ {
+  "cond": "dump",
+  "i": 11,
+  "q": {
+   "q": "How is direct port access to internal services restricted?",
+   "expect": [
+    "admin vlan",
+    "firewall"
+   ],
+   "kind": "pinned"
+  },
+  "pack_tokens": 389,
+  "answer": "Direct port access is firewalled to the admin VLAN only; all internal services sit behind an SSO proxy.",
+  "correct": true,
+  "unknown": false
+ },
+ {
+  "cond": "dump",
+  "i": 12,
+  "q": {
+   "q": "Through which host and port does external ssh enter the lan?",
+   "expect": [
+    "bastion.example.com",
+    "2222"
+   ],
+   "kind": "ops"
+  },
+  "pack_tokens": 389,
+  "answer": "UNKNOWN",
+  "correct": false,
+  "unknown": true
+ },
+ {
+  "cond": "dump",
+  "i": 13,
+  "q": {
+   "q": "Which vlan is the iot wifi mapped to?",
+   "expect": [
+    "30"
+   ],
+   "kind": "ops"
+  },
+  "pack_tokens": 389,
+  "answer": "UNKNOWN",
+  "correct": false,
+  "unknown": true
+ },
+ {
+  "cond": "dump",
+  "i": 14,
+  "q": {
+   "q": "What are the steps to onboard a new aurora service?",
+   "expect": [
+    "approle",
+    "scrape"
+   ],
+   "kind": "ops"
+  },
+  "pack_tokens": 389,
+  "answer": "UNKNOWN",
+  "correct": false,
+  "unknown": true
+ },
+ {
+  "cond": "dump",
+  "i": 15,
+  "q": {
+   "q": "Who is in the oncall rotation?",
+   "expect": [
+    "dana",
+    "robin"
+   ],
+   "kind": "ops"
+  },
+  "pack_tokens": 389,
+  "answer": "UNKNOWN",
+  "correct": false,
+  "unknown": true
+ },
+ {
+  "cond": "dump",
+  "i": 16,
+  "q": {
+   "q": "What channel naming pattern does the worker consume from?",
+   "expect": [
+    "aurora.jobs"
+   ],
+   "kind": "assoc"
+  },
+  "pack_tokens": 389,
+  "answer": "Workers consume from the `aurora.jobs.*` subject pattern in NATS JetStream.",
+  "correct": true,
+  "unknown": false
+ },
+ {
+  "cond": "dump",
+  "i": 17,
+  "q": {
+   "q": "You are preparing the deploy of the aurora worker. Which host do you watch during rollout?",
+   "expect": [
+    "grafana"
+   ],
+   "kind": "assoc"
+  },
+  "pack_tokens": 389,
+  "answer": "UNKNOWN",
+  "correct": false,
+  "unknown": true
+ }
+]

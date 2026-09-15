@@ -1,0 +1,47 @@
+__pycache__/
+*.pyc
+.DS_Store
+*.egg-info/
+dist/
+build/
+
+# generated eval corpus (rebuild with: python3 eval/gen_corpus.py)
+eval/corpus/
+eval/run*.log
+
+# LongMemEval public benchmark data + generated bundles (re-fetch/rebuild: eval/longmemeval/ingest.py)
+eval/longmemeval/data/
+eval/longmemeval/bundles/
+eval/longmemeval/*.log
+
+# Generated retrieval and competitive evaluation workspaces. Published
+# protocols, analyzers, compressed results, and reports remain tracked.
+eval/code_retrieval/cache/
+eval/code_retrieval/runs/
+eval/competitive/cache/
+eval/competitive/runs/
+
+# Memory sidecars are personal per-consumer state and are never shared.
+.muninn/
+graphify-out/
+
+# local build/coverage artifacts (they embed machine paths)
+.coverage
+.coverage.*
+htmlcov/
+
+# Personal knowledge created when this checkout is also MUNINN_HOME.
+/home.md
+/index.md
+/lessons/
+/notes/
+/projects/
+/threads/
+/style
+/style-learned/
+
+# Local development environments and tool state.
+/.venv/
+/.pytest_cache/
+/.ruff_cache/
+/uv.lock

@@ -1,0 +1,86 @@
+name: ci
+
+permissions:
+  contents: read
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  # This job verifies the standard-library core without the optional extractor.
+  core:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ["3.10", "3.12", "3.14"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install test runner
+        run: pip install -r requirements-test.txt -e .
+      - name: Run suite without optional dependencies
+        run: python -m pytest -q
+
+  # This job enables tree-sitter and enforces the combined coverage floor.
+  full:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.11"
+      - name: Install extractor extras + coverage
+        run: pip install -r requirements-test.txt -e ".[extract]"
+      - name: Check Python source
+        run: python -m pyflakes src tests tools eval
+      - name: Run suite under branch coverage
+        run: python -m coverage run --branch --source=src/muninn -m pytest -q
+      - name: Enforce the coverage floor
+        run: python -m coverage report --fail-under=93
+
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.11"
+      - name: Validate tracked files and evaluation reports
+        run: python tools/check_repository.py
+      - name: Build and inspect distributions
+        run: |
+          pip install build twine
+          python -m build
+          python -m twine check dist/*
+          python tools/check_distribution.py dist/*
+      - name: Test the wheel in an isolated environment
+        run: |
+          python -m venv /tmp/muninn-wheel
+          /tmp/muninn-wheel/bin/pip install dist/*.whl
+          /tmp/muninn-wheel/bin/muninn demo
+          /tmp/muninn-wheel/bin/muninn setup --dry-run \
+            --brain /tmp/muninn-home
+          /tmp/muninn-wheel/bin/muninn --root /tmp/muninn-wheel-kb init
+          /tmp/muninn-wheel/bin/muninn --root /tmp/muninn-wheel-kb source search \
+            "source retrieval" --path src/muninn --budget 200
+      - name: Test the standalone installer offline
+        run: |
+          smoke_dir="$(mktemp -d "$RUNNER_TEMP/muninn-install.XXXXXX")"
+          python tools/build_zipapp.py --output-dir "$smoke_dir/assets"
+          MUNINN_ASSET_DIR="$smoke_dir/assets" \
+            MUNINN_INSTALL_DIR="$smoke_dir/bin" sh install.sh
+          cd "$smoke_dir"
+          "$smoke_dir/bin/muninn" --help
+          "$smoke_dir/bin/muninn" --version
+          "$smoke_dir/bin/muninn" demo

@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: "Cite this software by using the metadata below."
+title: Muninn
+type: software
+authors:
+  - family-names: Elbey
+    given-names: Firat
+repository-code: "https://github.com/firat-elbey/muninn"
+license: MIT
+version: 0.1.0

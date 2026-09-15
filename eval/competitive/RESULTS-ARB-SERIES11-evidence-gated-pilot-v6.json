@@ -1,0 +1,306 @@
+{
+  "bootstrap": {
+    "cluster_resampling": "none",
+    "draws": 10000,
+    "finite_cluster_correction": "G/(G-1)",
+    "method": "paired-studentized-wild-cluster-bootstrap",
+    "salt": "arb-series11-evidence-gated-wild-bootstrap-v1",
+    "weights": "Rademacher"
+  },
+  "claim_boundary": "These opened review-comment cases can authorize an untouched validation. They cannot support a broad superiority claim.",
+  "conditions": {
+    "candidate-prefix": {
+      "metrics": {
+        "final_file_f1": {
+          "mean": 0.18611111111111112,
+          "samples": 12
+        },
+        "model_input_tokens": {
+          "mean": 223461.25,
+          "samples": 12
+        },
+        "read_tokens": {
+          "mean": 4959.791666666667,
+          "samples": 12
+        },
+        "seed_any_gold": {
+          "mean": 0.25,
+          "samples": 12
+        },
+        "seed_files": {
+          "mean": 3.0,
+          "samples": 12
+        },
+        "seed_labeled_span_recall": {
+          "mean": 0.0,
+          "samples": 12
+        },
+        "tool_calls": {
+          "mean": 9.875,
+          "samples": 12
+        },
+        "trajectory_failure": {
+          "mean": 0.0,
+          "samples": 12
+        },
+        "useful_context_success": {
+          "mean": 0.625,
+          "samples": 12
+        },
+        "wall_time_seconds": {
+          "mean": 70.1770102639166,
+          "samples": 12
+        }
+      },
+      "samples": 12
+    },
+    "evidence-gated-leads": {
+      "metrics": {
+        "final_file_f1": {
+          "mean": 0.19166666666666668,
+          "samples": 12
+        },
+        "model_input_tokens": {
+          "mean": 217543.25,
+          "samples": 12
+        },
+        "read_tokens": {
+          "mean": 5375.958333333333,
+          "samples": 12
+        },
+        "seed_any_gold": {
+          "mean": 0.25,
+          "samples": 12
+        },
+        "seed_files": {
+          "mean": 3.0,
+          "samples": 12
+        },
+        "seed_labeled_span_recall": {
+          "mean": 0.0,
+          "samples": 12
+        },
+        "tool_calls": {
+          "mean": 9.625,
+          "samples": 12
+        },
+        "trajectory_failure": {
+          "mean": 0.0,
+          "samples": 12
+        },
+        "useful_context_success": {
+          "mean": 0.625,
+          "samples": 12
+        },
+        "wall_time_seconds": {
+          "mean": 67.77202991841652,
+          "samples": 12
+        }
+      },
+      "samples": 12
+    },
+    "selective-leads": {
+      "metrics": {
+        "final_file_f1": {
+          "mean": 0.2125,
+          "samples": 12
+        },
+        "model_input_tokens": {
+          "mean": 223790.75,
+          "samples": 12
+        },
+        "read_tokens": {
+          "mean": 5654.875,
+          "samples": 12
+        },
+        "seed_any_gold": {
+          "mean": 0.25,
+          "samples": 12
+        },
+        "seed_files": {
+          "mean": 3.0,
+          "samples": 12
+        },
+        "seed_labeled_span_recall": {
+          "mean": 0.0,
+          "samples": 12
+        },
+        "tool_calls": {
+          "mean": 9.916666666666666,
+          "samples": 12
+        },
+        "trajectory_failure": {
+          "mean": 0.0,
+          "samples": 12
+        },
+        "useful_context_success": {
+          "mean": 0.75,
+          "samples": 12
+        },
+        "wall_time_seconds": {
+          "mean": 66.84440769262505,
+          "samples": 12
+        }
+      },
+      "samples": 12
+    }
+  },
+  "evidence": {
+    "details_sha256": "4bbf59a8abe42a1257ff820159e249292c6c93e4e31b3e40cf96995876b81dbc",
+    "execution_commit": "7535527a24c54287586dda7e342dacfde30c659a",
+    "merged_manifest_sha256": "9014f18022e3ae325b2fc6257612f218b3910ed0633376cc92f76beec42d2fef",
+    "registration_sha256": "6970cb8b5edc75e31754f63ae7d5f8844f006b7426e7f9a0989db35086af1746"
+  },
+  "experiment": "arb-series11-evidence-gated",
+  "mechanism": {
+    "evidence-gated-leads": {
+      "lead_exposures": 36,
+      "lead_reads": 25,
+      "promotions": 12,
+      "rejected_submissions": 1,
+      "submitted_leads": 12,
+      "trajectories": 24
+    },
+    "selective-leads": {
+      "lead_exposures": 36,
+      "lead_reads": 20,
+      "promotions": 0,
+      "rejected_submissions": 0,
+      "submitted_leads": 9,
+      "trajectories": 24
+    }
+  },
+  "phase": "pilot",
+  "primary_decision": {
+    "baseline_comparison": {
+      "candidate": "evidence-gated-leads",
+      "control": "candidate-prefix",
+      "final_file_f1": {
+        "difference": 0.005555555555555556,
+        "interval": {
+          "cluster_order": "UTF-8 lexicographic repository name",
+          "cluster_resampling": "none",
+          "clusters": 7,
+          "degenerate_draws": 0,
+          "draw_indexing": "zero-based",
+          "draws": 10000,
+          "estimable": true,
+          "finite_cluster_correction": "G/(G-1)",
+          "method": "paired-studentized-wild-cluster-bootstrap",
+          "one_sided_95_lower": -0.14614112160954984,
+          "quantile": "linear interpolation at rank (n-1)*p",
+          "salt": "arb-series11-evidence-gated-wild-bootstrap-v1",
+          "sign_derivation": "SHA-256(salt\\0label\\0draw_index\\0repository); the least-significant bit of the first digest byte selects the sign",
+          "standard_error": 0.057251630542868394,
+          "two_sided_95_lower": -0.1523484388654951,
+          "two_sided_95_upper": 0.16563571491719492,
+          "valid_draws": 10000,
+          "weights": "Rademacher"
+        },
+        "repository_weighted_difference": 0.02738095238095238
+      },
+      "model_input_tokens": {
+        "candidate_mean": 217543.25,
+        "control_mean": 223461.25,
+        "difference": -5918.0,
+        "ratio": 0.9735166611660858,
+        "within_110_percent": true
+      },
+      "read_tokens": {
+        "candidate_mean": 5375.958333333333,
+        "control_mean": 4959.791666666667,
+        "difference": 416.1666666666667,
+        "ratio": 1.0839080942579913,
+        "within_110_percent": true
+      },
+      "trajectory_failure": {
+        "candidate_mean": 0.0,
+        "control_mean": 0.0,
+        "difference": 0.0
+      },
+      "useful_context_success": {
+        "candidate_mean": 0.625,
+        "control_mean": 0.625,
+        "difference": 0.0
+      }
+    },
+    "component_comparison": {
+      "candidate": "evidence-gated-leads",
+      "control": "selective-leads",
+      "final_file_f1": {
+        "difference": -0.020833333333333332,
+        "interval": {
+          "cluster_order": "UTF-8 lexicographic repository name",
+          "cluster_resampling": "none",
+          "clusters": 7,
+          "degenerate_draws": 0,
+          "draw_indexing": "zero-based",
+          "draws": 10000,
+          "estimable": true,
+          "finite_cluster_correction": "G/(G-1)",
+          "method": "paired-studentized-wild-cluster-bootstrap",
+          "one_sided_95_lower": -0.10218011394021695,
+          "quantile": "linear interpolation at rank (n-1)*p",
+          "salt": "arb-series11-evidence-gated-wild-bootstrap-v1",
+          "sign_derivation": "SHA-256(salt\\0label\\0draw_index\\0repository); the least-significant bit of the first digest byte selects the sign",
+          "standard_error": 0.05128634037292715,
+          "two_sided_95_lower": -0.10637860171044582,
+          "two_sided_95_upper": 0.06471193504377917,
+          "valid_draws": 10000,
+          "weights": "Rademacher"
+        },
+        "repository_weighted_difference": -0.05357142857142857
+      },
+      "model_input_tokens": {
+        "candidate_mean": 217543.25,
+        "control_mean": 223790.75,
+        "difference": -6247.5,
+        "ratio": 0.9720832965616318,
+        "within_110_percent": true
+      },
+      "read_tokens": {
+        "candidate_mean": 5375.958333333333,
+        "control_mean": 5654.875,
+        "difference": -278.9166666666667,
+        "ratio": 0.9506767759381655,
+        "within_110_percent": true
+      },
+      "trajectory_failure": {
+        "candidate_mean": 0.0,
+        "control_mean": 0.0,
+        "difference": 0.0
+      },
+      "useful_context_success": {
+        "candidate_mean": 0.625,
+        "control_mean": 0.75,
+        "difference": -0.125
+      }
+    },
+    "gate": {
+      "baseline_mean_f1_gain_at_least_0.020": false,
+      "baseline_model_input_tokens_within_110_percent": true,
+      "baseline_one_sided_95_lower_bound_above_zero": false,
+      "baseline_read_tokens_within_110_percent": true,
+      "baseline_repository_weighted_f1_gain_positive": true,
+      "baseline_useful_context_loss_within_0.02": true,
+      "component_mean_f1_gain_at_least_0.005": false,
+      "component_model_input_tokens_within_110_percent": true,
+      "component_one_sided_95_lower_bound_above_zero": false,
+      "component_read_tokens_within_110_percent": true,
+      "component_repository_weighted_f1_gain_positive": false,
+      "component_useful_context_not_lower": false,
+      "failure_rate_increase_within_0.025": true,
+      "integrity_validated": true,
+      "passed": false
+    }
+  },
+  "schema": 1,
+  "selection": {
+    "baseline_control": "candidate-prefix",
+    "candidate": "evidence-gated-leads",
+    "candidate_passed": false,
+    "component_control": "selective-leads",
+    "development_validation_authorized": false
+  },
+  "status": "adaptive-development-screen"
+}

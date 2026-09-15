@@ -1,0 +1,101 @@
+name: release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Verify the release tag
+        run: |
+          python - <<'PY'
+          import os
+          import pathlib
+          import tomllib
+
+          data = tomllib.loads(pathlib.Path("pyproject.toml").read_text())
+          expected = "v" + data["project"]["version"]
+          actual = os.environ["GITHUB_REF_NAME"]
+          if actual != expected:
+              raise SystemExit(f"Release tag {actual!r} must equal {expected!r}.")
+          PY
+      - name: Install verification tools
+        run: python -m pip install -r requirements-test.txt -e ".[extract]" build twine
+      - name: Verify the release revision
+        run: |
+          python tools/check_repository.py
+          python -m pyflakes src tests tools eval
+          python -m coverage run --branch --source=src/muninn -m pytest -q
+          python -m coverage report --fail-under=93
+      - name: Build and inspect distributions
+        run: |
+          python -m build
+          python -m twine check dist/*
+          python tools/check_distribution.py dist/*
+      - name: Build standalone assets
+        run: |
+          python tools/build_zipapp.py --output-dir standalone
+          cp install.sh standalone/install.sh
+          sh -n standalone/install.sh
+      - name: Verify standalone assets
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          archive="$GITHUB_WORKSPACE/standalone/muninn-$version.pyz"
+          (
+            cd standalone
+            sha256sum --check "muninn-$version.pyz.sha256"
+          )
+          smoke_dir="$(mktemp -d "$RUNNER_TEMP/muninn-standalone.XXXXXX")"
+          (
+            cd "$smoke_dir"
+            python -I -S "$archive" --help
+            python -I -S "$archive" --version
+            python -I -S "$archive" demo
+          )
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: python-package-distributions
+          path: dist/
+          if-no-files-found: error
+          retention-days: 1
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: standalone-release-assets
+          path: standalone/
+          if-no-files-found: error
+          retention-days: 1
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: standalone-release-assets
+          path: standalone/
+      - name: Publish standalone assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          (
+            cd standalone
+            sha256sum --check "muninn-$version.pyz.sha256"
+          )
+          gh release upload "$GITHUB_REF_NAME" \
+            "standalone/muninn-$version.pyz" \
+            "standalone/muninn-$version.pyz.sha256" \
+            standalone/install.sh \
+            --repo "$GITHUB_REPOSITORY"

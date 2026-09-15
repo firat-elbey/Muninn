@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "muninn-kb"
+version = "0.1.0"
+description = "A plain-Markdown knowledge base with use-adaptive recall for AI agents"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE", "NOTICE", "THIRD_PARTY_NOTICES.md", "LICENSES/*.txt"]
+authors = [{name = "Firat Elbey"}]
+requires-python = ">=3.10"
+keywords = ["knowledge", "memory", "llm", "agents", "okf", "markdown"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Operating System :: POSIX",
+]
+
+[project.urls]
+Homepage = "https://github.com/firat-elbey/muninn"
+Repository = "https://github.com/firat-elbey/muninn"
+Issues = "https://github.com/firat-elbey/muninn/issues"
+
+# The core uses only the Python standard library. Optional features fail softly.
+[project.optional-dependencies]
+# This extra enables deterministic extraction from source code and structured documents.
+extract = ["tree-sitter>=0.23", "tree-sitter-language-pack>=0.13,<1.0"]
+# Language-routed dependency extraction. The standard-library fallback remains
+# available when this extra is absent.
+graph = ["graphifyy>=0.9.32,<0.10"]
+
+[project.scripts]
+muninn = "muninn.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+norecursedirs = ["eval/competitive/cache"]
