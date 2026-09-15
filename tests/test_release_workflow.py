@@ -31,7 +31,7 @@ def shell_environment(workspace: Path) -> dict[str, str]:
         env.pop(name, None)
     env.update(
         GITHUB_WORKSPACE=str(workspace),
-        GITHUB_REF_NAME="v0.1.0",
+        GITHUB_REF_NAME="v0.2.0",
         GITHUB_REPOSITORY="example/muninn",
         RUNNER_TEMP=str(workspace),
         PATH=str(Path(sys.executable).parent) + os.pathsep + env.get("PATH", ""),
@@ -53,7 +53,7 @@ def test_release_only_grants_publication_write_access() -> None:
     assert "--clobber" not in text
     assert re.findall(r"uses: ([^\s]+)", text)
     assert all(
-        re.fullmatch(r"[^@]+@[0-9a-f]{40}", action)
+        re.fullmatch(r"[^@]+@[0-9a-f]{40}", action) or action == "./.github/workflows/parser-install.yml"
         for action in re.findall(r"uses: ([^\s]+)", text)
     )
 
@@ -114,8 +114,8 @@ def test_standalone_assets_pass_isolated_smoke_checks(tmp_path: Path) -> None:
         assert result.returncode == 0, result.stdout + result.stderr
 
     assert {path.name for path in (tmp_path / "standalone").iterdir()} == {
-        "muninn-0.1.0.pyz",
-        "muninn-0.1.0.pyz.sha256",
+        "muninn-0.2.0.pyz",
+        "muninn-0.2.0.pyz.sha256",
         "install.sh",
     }
     assert "python -I -S" in run_block("Verify standalone assets")
@@ -126,10 +126,10 @@ def test_publish_uploads_only_verified_standalone_assets(tmp_path: Path) -> None
     script = run_block("Publish standalone assets")
     assets = tmp_path / "standalone"
     assets.mkdir()
-    archive = assets / "muninn-0.1.0.pyz"
+    archive = assets / "muninn-0.2.0.pyz"
     archive.write_bytes(b"verified archive")
     digest = hashlib.sha256(archive.read_bytes()).hexdigest()
-    (assets / "muninn-0.1.0.pyz.sha256").write_text(
+    (assets / "muninn-0.2.0.pyz.sha256").write_text(
         f"{digest}  {archive.name}\n", encoding="utf-8"
     )
     (assets / "install.sh").write_text("#!/bin/sh\n", encoding="utf-8")
@@ -150,9 +150,9 @@ def test_publish_uploads_only_verified_standalone_assets(tmp_path: Path) -> None
     assert result.stdout.splitlines()[-8:] == [
         "release",
         "upload",
-        "v0.1.0",
-        "standalone/muninn-0.1.0.pyz",
-        "standalone/muninn-0.1.0.pyz.sha256",
+        "v0.2.0",
+        "standalone/muninn-0.2.0.pyz",
+        "standalone/muninn-0.2.0.pyz.sha256",
         "standalone/install.sh",
         "--repo",
         "example/muninn",
@@ -194,3 +194,14 @@ def test_ci_runs_offline_installer_smoke_checks(tmp_path: Path) -> None:
     assert "setup" not in script
     assert '"$smoke_dir/bin/muninn" --help' in script
     assert '"$smoke_dir/bin/muninn" demo' in script
+
+
+def test_required_package_check_fails_when_parser_matrix_does_not_pass(tmp_path):
+    package = CI.read_text().split("  package:\n", 1)[1]
+    assert "needs: parsers" in package
+    assert "if: always()" in package
+    script = run_block("Require successful parser installation checks", CI)
+    for state in ("success", "failure", "cancelled", "skipped", ""):
+        result = subprocess.run(["bash", "-euo", "pipefail", "-c", script], cwd=tmp_path,
+                                env=dict(os.environ, PARSER_RESULT=state), check=False)
+        assert (result.returncode == 0) == (state == "success")

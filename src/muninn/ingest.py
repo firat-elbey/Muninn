@@ -291,7 +291,7 @@ def _carry_inferred(old_body: str, new_body: str,
 
 
 def write_notes(bundle: Bundle, nodes: dict, edges_by_src: dict,
-                plan) -> tuple[int, int]:
+                plan, *, qualify_links: bool = False) -> tuple[int, int]:
     """The ONE graph→notes writer both importers drive. ``plan(nid, node,
     label)`` returns ``(dir_prefix, meta, body_lines)`` for a node: or
     ``None`` to skip it entirely. Everything else is common and identical by
@@ -346,11 +346,13 @@ def write_notes(bundle: Bundle, nodes: dict, edges_by_src: dict,
     for note in projected.values():
         for name in bundle._identity_names(note):
             identities.setdefault(name, set()).add(note.path)
+    # Scoped maps must retain their targets when later imports reuse labels.
     targets = {
         nid: rel
         for nid, (label, rel, _meta, _body_lines) in plans.items()
         if nid not in protected and (
-            identities.get(bundle._normalize_name(label)) != {rel}
+            qualify_links
+            or identities.get(bundle._normalize_name(label)) != {rel}
             or (label in projected and label != rel)
             or ("/" in label and label + ".md" in projected
                 and label + ".md" != rel))

@@ -405,8 +405,11 @@ Rules:
 - **Wiring never overrides.** `install --home` writes the full managed
   protocol block only into files it creates; an EXISTING canonical
   global file or project AGENTS.md gains at most a two-line pointer
-  (`<!-- muninn:home ... -->` + one instruction line), and re-runs are
-  no-ops. `muninn doctor --home` verifies all of it, exit 1 on drift.
+  (`<!-- muninn:home ... -->` + one instruction line). The pointer requires
+  rooted `prime` and `skill` commands. Setup refreshes recognized legacy
+  pointers and managed blocks while preserving personal prose. Other content
+  requires review. `muninn doctor --home` verifies the full protocol route
+  and exits with status 1 on drift.
 - **Global slots are complete.** Setup connects Claude Code, Codex, Gemini,
   and Grok to the canonical file. Home doctor fails when any supported slot is
   missing or differs from the canonical file.
@@ -465,6 +468,32 @@ remote state. The full manifest schema is defined in
 - **L1: pack consumer**: reads context packs; honors `supersedes`.
 - **L2: dynamics writer**: appends ledger events (touch/outcome/...),
   preserves unknown events, treats `state.json` as a rebuildable cache.
+
+## Default installation and coding scope
+
+Release 0.2.0 installs native syntax parsers by default through the curl installer.
+The core archive remains standard-library-only. `--core-only` explicitly omits parser provisioning.
+The default installation uses an isolated environment, exact dependency versions, binary-only packages, and required wheel hashes.
+Parser verification must pass before the installer replaces an existing executable.
+The installer does not modify system Python packages, agent configuration, or knowledge.
+
+`doctor --parsers` parses fixed samples without scanning files or changing memory.
+The installed protocol limits automatic source mapping and indexing to coding work.
+The agent chooses the task type and relevant source scope. General memory retrieval remains available for non-coding tasks.
+An explicit graph-building request can still select approved documents.
+Installation does not start a background source scan or execute project code.
+
+Saved extraction maps use a digest of the canonical project root and a digest of each relative source path.
+Git subfolder scans retain repository-relative resource paths. Home bundles place these notes in the project's room.
+This separates matching file and symbol names across projects and partial scans.
+Existing unscoped notes remain unchanged. Moving a source root creates a separate map namespace.
+
+Explicit `symbol` and `structural-fusion` searches use separate parser-backed indexes.
+If parser diagnostics fail, these modes use a separate core profile.
+Python definitions and filename matches remain available. Definitions in other languages require working parsers.
+Their cache profiles include parser readiness and the exact versions of all five parser packages.
+Changing parser capability selects another profile, including with `--no-refresh`.
+The default hybrid retains its parser-independent index and evaluated ranking.
 
 ## 6. Versioning
 

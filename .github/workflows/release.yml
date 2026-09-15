@@ -5,7 +5,13 @@ on:
     types: [published]
 
 jobs:
+  parsers:
+    permissions:
+      contents: read
+    uses: ./.github/workflows/parser-install.yml
+
   build:
+    needs: parsers
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -30,7 +36,9 @@ jobs:
               raise SystemExit(f"Release tag {actual!r} must equal {expected!r}.")
           PY
       - name: Install verification tools
-        run: python -m pip install -r requirements-test.txt -e ".[extract]" build twine
+        run: |
+          python -m pip install -r requirements-test.txt -e ".[extract]" build twine
+          python -m pip --isolated install --only-binary=:all: --require-hashes --no-deps -r requirements-parsers.txt
       - name: Verify the release revision
         run: |
           python tools/check_repository.py

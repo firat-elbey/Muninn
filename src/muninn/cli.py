@@ -15,7 +15,7 @@ import time
 
 from . import enrich, extract, home, skill, source_retrieval, style, viz
 from .demo import run_demo
-from .dynamics import Dynamics
+from .dynamics import Dynamics, repository_identity
 from .export import export_graph
 from .ingest import import_graphify
 from .observe import (KINDS, TOOL_KINDS, current_branch, hook_config,
@@ -94,6 +94,37 @@ def cmd_import(args):
     _refresh_viz(args.root)
 
 
+def _import_source_graph(bundle, graph, source_path, subdir="extracted"):
+    """Keep project and file identities stable across partial source scans."""
+    source_root, _is_repo = home._toplevel(source_path)
+    input_root = os.path.realpath(source_path)
+    if not os.path.isdir(input_root):
+        input_root = os.path.dirname(input_root)
+    prefix = os.path.relpath(input_root, source_root).replace(os.sep, "/")
+    for node in graph["nodes"]:
+        resource = node.get("source_file")
+        if resource and prefix != ".":
+            node["source_file"] = prefix + "/" + resource
+    source_id = repository_identity(source_root)[:20]
+    subdir += "/" + source_id
+    if home.is_home(bundle.root):
+        room = home.room_for(bundle.root, source_path, create=True)
+        if room is None:
+            raise SystemExit("Cannot map the home knowledge base into itself. Select an external code path.")
+        subdir = room + "/" + subdir
+    written, skipped = extract.import_graph(bundle, graph, subdir=subdir, scoped=True)
+    return written, skipped, subdir
+
+
+def _source_excludes(source_path, bundle_root, subdir="extracted"):
+    """Exclude a nested knowledge base without excluding colocated source."""
+    source_root = os.path.realpath(source_path)
+    target = os.path.realpath(bundle_root)
+    if source_root != target:
+        return {target}
+    return {os.path.join(target, folder) for folder in (subdir, "inferred", "imported")}
+
+
 def _emit_graph(graph, args):
     """The shared output tail of `extract` and `enrich`: the config-secret
     notice at the point of use, the --json write, the --into import, and the
@@ -113,9 +144,9 @@ def _emit_graph(graph, args):
     if args.into:
         os.makedirs(args.into, exist_ok=True)
         b = Bundle(args.into)
-        written, skipped = extract.import_graph(b, graph, subdir=args.subdir)
+        written, skipped, subdir = _import_source_graph(b, graph, args.path, args.subdir)
         b.generate_index()
-        print(f"imported {written} notes into {args.subdir}/ under {args.into}"
+        print(f"imported {written} notes into {subdir}/ under {args.into}"
               + (f" ({skipped} unchanged, skipped)" if skipped else ""))
         _refresh_viz(args.into)
     if not args.json and not args.into:
@@ -128,12 +159,11 @@ def cmd_extract(args):
     print a summary, then write graph.json (--json) and/or import notes into
     a bundle (--into). Neither → a dry-run summary only."""
     if not extract.available():
-        print("tree-sitter not installed: pip install tree-sitter "
-              "tree-sitter-language-pack (the deterministic extractor is an "
-              "optional dependency; core muninn stays stdlib-only)")
+        print("tree-sitter not installed. Run the default release installer, "
+              "then run `muninn doctor --parsers`.")
         return
     # when importing into a bundle, never sweep that bundle's own output back in
-    exclude = ({os.path.join(os.path.abspath(args.into), args.subdir)}
+    exclude = (_source_excludes(args.path, args.into, args.subdir)
                if args.into else None)
     only = None
     if args.only:
@@ -167,9 +197,8 @@ def cmd_enrich(args):
     MUNINN_ENRICH_URL (a local /v1/chat/completions server). With none of
     them the base is written and nothing is inferred (fail-soft)."""
     if not extract.available():
-        print("tree-sitter not installed: pip install tree-sitter "
-              "tree-sitter-language-pack (the deterministic base is required "
-              "before enrichment)")
+        print("tree-sitter not installed. Run the default release installer, "
+              "then run `muninn doctor --parsers` before enrichment.")
         return
     # the exclude set must be IDENTICAL at --request and --apply time (the
     # digest fingerprints the extracted node table), so derive it from
@@ -269,10 +298,7 @@ def cmd_build(args):
         b = _bundle(args)
         # exclude our own generated-note output (tree-sitter `extracted/` and
         # graphify `imported/`) so `build .` never re-ingests notes it wrote
-        root_abs = os.path.abspath(args.root)
-        exclude = {os.path.join(root_abs, "extracted"),
-                   os.path.join(root_abs, "inferred"),
-                   os.path.join(root_abs, "imported")}
+        exclude = _source_excludes(folder, args.root)
         graph, stats = extract.extract_path(folder, exclude=exclude)
         s = extract.summarize(graph)
         if args.enrich:  # optional LLM layer on top of the deterministic base
@@ -285,11 +311,11 @@ def cmd_build(args):
             s = extract.summarize(graph)
             print(f"LLM enrichment: +{inf_nodes} inferred concept node(s), "
                   f"+{inf_edges} inferred edge(s)")
-        written, skipped = extract.import_graph(b, graph)
+        written, skipped, subdir = _import_source_graph(b, graph, folder)
         b.generate_index()
         print(f"tree-sitter base: parsed {stats['files']} file(s) → "
               f"{s['nodes']} nodes, {s['edges']} edges; imported {written} "
-              f"notes into extracted/"
+              f"notes into {subdir}/"
               + (f" ({skipped} unchanged, skipped)" if skipped else ""))
         cfg = extract.config_value_count(graph)
         if cfg:  # secret-exposure notice at point of use
@@ -874,7 +900,7 @@ def _install_home(args, show_paste: bool = True) -> bool:
         args.source or os.path.join("~", "AGENTS.md")))
     ok = True
     try:
-        with open(canonical, encoding="utf-8") as fh:
+        with open(canonical, encoding="utf-8", newline="") as fh:
             text = fh.read()
     except FileNotFoundError:
         if os.path.lexists(canonical) or not os.path.isdir(os.path.dirname(canonical)):
@@ -883,10 +909,12 @@ def _install_home(args, show_paste: bool = True) -> bool:
         text = None
     except (OSError, UnicodeError) as error:
         raise SystemExit(f"muninn install: cannot read the canonical instruction file: {error}") from None
-    if (text is not None and home.POINTER_MARK in text
-            and not home.pointer_matches(text, brain)):
-        raise SystemExit("muninn install: the canonical home pointer is damaged or selects "
-                         "another root. Preserve and review it before setup.")
+    refreshed = None
+    if text is not None and home.POINTER_MARK in text:
+        refreshed = home.refresh_pointer(text, brain)
+        if refreshed is None:
+            raise SystemExit("muninn install: the canonical home pointer is damaged or selects "
+                             "another root. Preserve and review it before setup.")
     try:
         fresh = home.init_home(brain)
     except (OSError, ValueError) as error:
@@ -907,7 +935,12 @@ def _install_home(args, show_paste: bool = True) -> bool:
         else:
             print(f"{canonical}: {verdict}")
     elif home.POINTER_MARK in text:
-        print(f"The canonical file at {canonical} already points to Muninn.")
+        if refreshed != text:
+            with open(canonical, "w", encoding="utf-8", newline="") as fh:
+                fh.write(refreshed)
+            print(f"Refreshed the full protocol route in {canonical}.")
+        else:
+            print(f"The canonical file at {canonical} already points to the complete Muninn protocol.")
     else:  # a real personal file: the two-line pointer, nothing more
         with open(canonical, "a", encoding="utf-8") as fh:
             if not text.endswith("\n"):
@@ -1339,7 +1372,7 @@ def _doctor_home(args) -> None:
         text = ""
     wired = _protocol_matches_root(text, brain)
     if PROTOCOL_BEGIN not in text and PROTOCOL_END not in text:
-        wired = wired or home.pointer_matches(text, brain)
+        wired = wired or home.pointer_routes_protocol(text, brain)
     print(f"  {canonical}: "
           + ("points at muninn" if wired
              else "NO muninn pointer (fix: muninn install --home)"))
@@ -1387,6 +1420,16 @@ def _doctor_home(args) -> None:
 
 def cmd_doctor(args):
     """Verify agent instruction files and confirm that the bundle loads."""
+    if args.parsers:
+        issues = extract.parser_issues()
+        if issues:
+            print("parsers: unavailable or incompatible")
+            for issue in issues:
+                print("  " + issue)
+            print("Run the default release installer to install the pinned parsers.")
+            raise SystemExit(1)
+        print("parsers: ready (Python, JavaScript, TypeScript, Rust, Go, C#, YAML, embedded templates)")
+        return
     if args.home_:
         _doctor_home(args)
         return
@@ -2230,6 +2273,8 @@ def main(argv=None):
     dr.add_argument("--home", dest="home_", action="store_true",
                     help="Verify the home bundle, canonical pointer, and "
                          "project registry.")
+    dr.add_argument("--parsers", action="store_true",
+                    help="Parse built-in syntax samples without reading files or changing memory.")
     dr.add_argument("--brain", default=None,
                     help="Set the home bundle path. The default is "
                          "$MUNINN_HOME or ~/muninn.")

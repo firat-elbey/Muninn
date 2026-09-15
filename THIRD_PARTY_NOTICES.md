@@ -3,6 +3,16 @@
 Muninn is licensed under the MIT License except for the third-party material
 identified below. The corresponding license governs that material.
 
+## Installed parsers
+
+The default installer downloads the exact binary packages listed in [requirements-parsers.txt](requirements-parsers.txt).
+It retains their package metadata and license files in an isolated environment.
+The Muninn Python archive contains the dependency lock, not these native libraries.
+
+The packages are tree-sitter, tree-sitter-language-pack, tree-sitter-c-sharp, tree-sitter-embedded-template, and tree-sitter-yaml.
+The [language pack](https://pypi.org/project/tree-sitter-language-pack/0.13.0/) contains grammars under their respective upstream licenses.
+Muninn's MIT License does not replace those licenses.
+
 ## LongMemEval
 
 The following files contain material from the

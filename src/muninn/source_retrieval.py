@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import os
 import re
 import subprocess
 from dataclasses import dataclass
+from importlib import metadata
 from pathlib import Path
 
 from .code_context import CodeContextPack, assemble_code_context
@@ -16,6 +18,13 @@ from .persistent_code_search import PersistentCodeSearchIndex
 
 
 INDEX_DIRECTORY = "source-indexes"
+PARSER_DISTRIBUTIONS = (
+    "tree-sitter",
+    "tree-sitter-language-pack",
+    "tree-sitter-c-sharp",
+    "tree-sitter-embedded-template",
+    "tree-sitter-yaml",
+)
 
 
 @dataclass(frozen=True)
@@ -51,6 +60,24 @@ def source_database(bundle_root: str | os.PathLike[str],
         INDEX_DIRECTORY,
         f"{label}-{identity}.sqlite",
     )
+
+
+def _structural_profile() -> tuple[str, bool]:
+    """Identify parser readiness and exact dependencies for a separate cache."""
+    from . import extract
+
+    ready = not extract.parser_issues()
+    versions = {}
+    for name in PARSER_DISTRIBUTIONS:
+        try:
+            versions[name] = metadata.version(name)
+        except metadata.PackageNotFoundError:
+            versions[name] = None
+    profile = json.dumps(
+        {"revision": 1, "ready": ready, "versions": versions},
+        sort_keys=True,
+    )
+    return hashlib.sha256(profile.encode("utf-8")).hexdigest()[:16], ready
 
 
 def _git(root: str, *arguments: str) -> bytes | None:
@@ -191,11 +218,19 @@ def build_source_index(bundle_root: str | os.PathLike[str],
 def ensure_source_index(bundle_root: str | os.PathLike[str],
                         source_root: str | os.PathLike[str], *,
                         refresh: bool = True,
-                        force: bool = False
+                        force: bool = False,
+                        structural: bool = False
                         ) -> tuple[PersistentCodeSearchIndex, bool]:
     """Open a current index, rebuilding it when required or requested."""
     source = resolve_source_root(source_root)
     database = source_database(bundle_root, source)
+    parser_ready = False
+    if structural:
+        # Probe even without source refresh: installing or changing parsers
+        # must not reuse facts extracted under a different capability.
+        profile, parser_ready = _structural_profile()
+        path = Path(database)
+        database = str(path.with_name(f"{path.stem}-structural-{profile}.sqlite"))
     current_snapshot = source_snapshot(source) if refresh or force else ""
     if not force and os.path.isfile(database):
         try:
@@ -214,6 +249,7 @@ def ensure_source_index(bundle_root: str | os.PathLike[str],
     index = PersistentCodeSearchIndex.build(
         source,
         database,
+        structural=parser_ready,
         source_snapshot=current_snapshot or source_snapshot(source),
     )
     return index, True
@@ -249,6 +285,7 @@ def search_source(bundle_root: str | os.PathLike[str],
         bundle_root,
         source,
         refresh=refresh,
+        structural=mode in {"symbol", "structural-fusion"},
     )
     try:
         hits = index.search(query, mode=mode, limit=limit)
