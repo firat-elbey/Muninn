@@ -29,8 +29,7 @@ does not authorize changes to the user's home directory.
 Muninn requires Python 3.10 or later, a POSIX operating system, and curl for
 online installation. The installer does not require pip.
 
-The first standalone release is pending. After publication, download the
-versioned installer:
+Download the versioned installer:
 
 ```bash
 muninn_installer_dir=$(mktemp -d)
@@ -57,7 +56,7 @@ The demonstration leaves existing notes unchanged. Its final line identifies
 the temporary bundle that it created. If `~/.local/bin` is absent from `PATH`,
 use the full executable path for subsequent commands.
 
-Before publication, build from this checkout.
+For a source build, use this checkout.
 Then run the demonstration:
 
 ```bash

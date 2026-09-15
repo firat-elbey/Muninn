@@ -33,8 +33,7 @@ Do not copy private instructions or knowledge into this repository.
 
 ## Install a release
 
-The first standalone release is pending. After publication, download its
-installer:
+Download the version 0.1.0 installer:
 
 ```bash
 muninn_installer_dir=$(mktemp -d)
