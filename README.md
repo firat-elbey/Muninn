@@ -27,8 +27,6 @@ The default installation includes tree-sitter parsers and their grammars.
 It requires CPython 3.10 through 3.14 with `venv`, macOS or Linux, and curl.
 The parser environment is isolated. No manual pip command is required.
 
-Version 0.2.0 is in preparation. Its release assets are not yet verified for public installation.
-
 Download the versioned installer:
 
 ```bash

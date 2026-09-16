@@ -3,7 +3,7 @@
 This file records user-visible changes to Muninn. The project follows
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html) after version 0.1.0.
 
-## 0.2.0 (in preparation)
+## 0.2.0
 
 In version 0.2.0, the default curl installation includes tree-sitter parsers and local grammars.
 
