@@ -38,8 +38,6 @@ Do not copy private instructions or knowledge into this repository.
 
 ## Install a release
 
-Version 0.2.0 is in preparation. Its release assets are not yet verified for public installation.
-
 Download the version 0.2.0 installer:
 
 ```bash
