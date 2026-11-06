@@ -1,0 +1,18 @@
+{
+  "decisions": {
+    "development": 474,
+    "holdout": 81,
+    "total": 555
+  },
+  "harness_commit": "c7dbdf2de3405d16c019c62f6684a12fce801f1e",
+  "method": "brainbench-volunteer-integration-equivalence-v1",
+  "mismatches": [],
+  "production_commit": "5aabbed",
+  "production_source_tree": "ddda2f9477e478e81da7532977f487b71c85f522",
+  "reference_sha256": {
+    "development": "7058120c6b334d54dce33e26be65a964ff680574a1f5ce03c93a93fc343c5ccf",
+    "holdout": "d1920a6e24d70756ca480e5f488e88d2274b1ea8433ad7a08ff76b8a34b6d7e8"
+  },
+  "schema": 1,
+  "verdict": "PASS"
+}

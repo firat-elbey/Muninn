@@ -1,0 +1,110 @@
+{
+  "groups": [
+    {
+      "kind": "project-code",
+      "source": "https://github.com/firat-elbey/Muninn",
+      "redistribution": "MIT, original software and documentation.",
+      "files": {
+        "eval/README.md": "ee81142a859022e8d5f1a01c428d409bcc2ccd36086fd5c3488beda2154bb28e",
+        "eval/code_retrieval/README.md": "d99a122e95eef4a6c5a6bb96818fe43d0c7e145c84265443508f81254930acdb",
+        "eval/code_retrieval/analyze_persistent_parity.py": "54207a17e7403d87430a901f6eebf9fd2f90f3d901076d209c7470ed6d29b361",
+        "eval/code_retrieval/analyze_swebench.py": "c481c70130ed504f1ba54aaede905deefcbe2aad012db5dff70ea84f205bb106",
+        "eval/code_retrieval/run_persistent_parity.py": "bbe29e1f25c4ebcad7d745f4c5040ba770ae76987888995ba0bec45caec27c5f",
+        "eval/code_retrieval/run_swebench.py": "1890c4d986242b63fb202e462362fc9548f60d1e81b79d997651acff7ec9b97d",
+        "eval/competitive/analyze_dependeval.py": "265b78c2dd2ca85c1b824f9a50f7de82687d386aacc88b2bb2068fd6316d2566",
+        "eval/competitive/run_dependeval.py": "dd418de533ea996b57ab85c235901b3bf25a8b531811cf2b2a5f42400a5e8632",
+        "eval/context_efficiency.py": "4a573ea4baad35f60c9909f328dd8cbf19615a1955ca60d2c14cd41b1022d86a",
+        "eval/field_probe.py": "931e7bba8ac39060158511bc1bd35644bd53966cf31cc20c1cc7b0c0970acb50",
+        "eval/longmemeval/ingest.py": "f681ebfd3b950eebf4ff1a5b0f66b49e866196ad55098d31bf656fedaed25658",
+        "eval/longmemeval/verify_results.py": "f5545294c7fca0b183c3e2183a195260a7d20e33ea5b1a043a78d7866c7c5ed4",
+        "eval/public_benchmarks.py": "14068059e6c239d335a684f5d3327e892cfb5f89455391147495771895698824",
+        "eval/run_eval.py": "c046453c1eb50b29d64360538df96b18cb114fcd3f534cff279292bec5d845fb"
+      }
+    },
+    {
+      "kind": "independent-synthetic",
+      "source": "eval/gen_corpus.py and eval/context-efficiency-labels.json",
+      "redistribution": "MIT, independently generated fictional notes and queries with simulated event history.",
+      "files": {
+        "eval/RESULTS-b400k2.md": "c030e2365c796284bef2252dc8dd04734dec55f274e017db3b6b731905a07b3b",
+        "eval/RESULTS-b900k5.md": "54ba875607372bf04facd2dce28293b9cf78108ab6fb4a8921c7a3c4b185576a",
+        "eval/RESULTS-context-efficiency-2026-09.json": "55508cef713b8dee2a63c628f1462adfa899e3a7849b0e17f5ca011323ea7857",
+        "eval/RESULTS-context-efficiency-2026-09.md": "050e8c3b54ee77f802ecd40cca69d92c55dc54dd131dfca8551bcfde9cc2e00e",
+        "eval/context-efficiency-labels.json": "9f0848dd5184a28b1e4577e7647788416b09c9257dcfef9ded56194a8d59e00d",
+        "eval/gen_corpus.py": "d6d6b9123c66db48767186b3250140437c6ad4e5e6cb800441984b9ea72de791",
+        "eval/questions.json": "605c85135dd2ea0b85ce5c1acf3db9fd1d5f1cb94d88598cd72396183d8fe71d",
+        "eval/results-b400k2.json": "3e2115859b2d377f96b431ea43d711059fab1e1b7be7e18033b12014f4bac22d",
+        "eval/results-b900k5.json": "23aaa7d0ad0caaf5a2e3afedf9c759c2a56d7998864b290bd56a4a79f02926c4"
+      }
+    },
+    {
+      "kind": "public-benchmark",
+      "source": "https://github.com/xiaowu0162/LongMemEval",
+      "redistribution": "MIT, see LICENSES/LongMemEval-MIT.txt and THIRD_PARTY_NOTICES.md.",
+      "files": {
+        "eval/longmemeval/RESULTS-embed-full.md": "5f65f9ccd933efabf6cf58f9a3dd9675ea83d4135b0baf5e5f8c00240e131cc3",
+        "eval/longmemeval/RESULTS-embed.md": "0b5704f7cc764d7f624fed2ad2e4eefbc8eaf8d992ac871e220858d78ed5edcc",
+        "eval/longmemeval/RESULTS-pilot.md": "711135ffaaad2724e87012d04e6435c8bbda0bfd85fa56f47fc9d921dce346b4",
+        "eval/longmemeval/RESULTS-walk-typed.md": "82ad41cb414e6a153fad40c83700abb0e2aee77c051ef08dc8671caf71827989",
+        "eval/longmemeval/RESULTS-walk.md": "0145478458466cb5e0514bb969bc3aa576ebf33d3c239dc1007ad7550431618c",
+        "eval/longmemeval/pref-sample.json": "16292d7276f8f54b789f9f14053e9f5b6af3196c4e31afacda503f486cd954e5",
+        "eval/longmemeval/results-embed-full.json": "77ecd42910a8a3941a60ba3f57f2f9266f2e2baba7446a04567cc2edde768928",
+        "eval/longmemeval/results-embed.json": "405d65feb91a599b6c387b7f1a0d3f5ed94e4835a79dc35eae4862c612831f8f",
+        "eval/longmemeval/results-pilot.json": "ede3397b6156bc5f3af86f41d9979cbc876f175faa7f3baded032aef549ff6cd",
+        "eval/longmemeval/results-walk-typed.json": "227ccd1c80e88870c48d2270c14ffdaccd5a4e6c8f58a8d581da2e84cc1ca136",
+        "eval/longmemeval/results-walk.json": "0c6796d29d46ba292b54cd2975e16d8746e4ba2d2cae688a18089bd046d9924e",
+        "eval/longmemeval/run.py": "e19cef8bfe4c77c4061dec37acbf0d581c9ce2d8a6af4b219d3ad1fac58e2f04",
+        "eval/longmemeval/sample.json": "c7ecbb3aa9f83f7dba37d43e38f0f789ce04abd050d317e2617b0c826c4358ad",
+        "eval/longmemeval/walk-sample.json": "791987e59e2d1a92dadb05a4207b9005aee51df200e7ec7ef9cb780b0f4c329e"
+      }
+    },
+    {
+      "kind": "public-benchmark",
+      "source": "https://github.com/SWE-bench/SWE-bench",
+      "redistribution": "Derived rankings, file labels, hashes and summaries only. Upstream repositories and issue text are obtained separately.",
+      "files": {
+        "eval/code_retrieval/RESULTS-persistent-parity-swebench-lite-300.json.gz": "b0866f622cff7e36b8d0ff3ad2a0c26c6172c05f9559bb690468d64f617174fa",
+        "eval/code_retrieval/RESULTS-persistent-parity-swebench-lite-300.md": "c43db921ac4265274df592880bcdc643f2da2ee3b0c8a769093c8765ec8110bf",
+        "eval/code_retrieval/RESULTS-swebench-lite-300.json.gz": "032cdedabcd2c51cd49fb1e97b0951d348bb7685cb0c6dee7841051ef43ac640",
+        "eval/code_retrieval/RESULTS-swebench-lite-300.md": "d207de791da7cfcbf4427297caa65763d58d7f8998bb02762cf97da2ed4c0074"
+      }
+    },
+    {
+      "kind": "public-benchmark",
+      "source": "https://github.com/ink7-sudo/DependEval",
+      "redistribution": "Aggregate measurements and fingerprints only. The upstream dataset is obtained separately.",
+      "files": {
+        "eval/competitive/RESULTS-dependeval-series5-confirmation.md": "ac06f391f5ce274c8d6165fecc8e777cb0cd974bf3108673af8d7d12cb8dbe6b"
+      }
+    },
+    {
+      "kind": "public-benchmark",
+      "source": "https://github.com/garrytan/gbrain",
+      "redistribution": "Protocol, verification and aggregate measurements. The upstream corpus is obtained separately.",
+      "files": {
+        "eval/competitive/BRAINBENCH-VOLUNTEER-INTEGRATION-equivalence-protocol.md": "f39ff2773e9a63d49d28f45c7a979ee2d87bd24fa763dc58700aa5a679cbd19e",
+        "eval/competitive/RESULTS-BRAINBENCH-VOLUNTEER-INTEGRATION-EQUIVALENCE-v1.md": "311ac9404dabe19531462e52d7ebc9f81ee22c2e54784a435177db3ce9ccaa48",
+        "eval/competitive/evidence/brainbench-volunteer-integration-equivalence-v1/independent-verification.json": "94a99d9115f5df971b806f54f37af67ae222b42e9d45b64534e3e76194519235",
+        "eval/competitive/evidence/brainbench-volunteer-integration-equivalence-v1/result.json": "c78f21d60e5dd8a1355777ad7d181c0fed85febe24df9f825e39b213d2da1e29"
+      }
+    },
+    {
+      "kind": "public-benchmark",
+      "source": "https://github.com/firat-elbey/Muninn/blob/main/eval/FIELD-TESTS.md",
+      "redistribution": "Measurements of public source repositories identified in the field report. Original source is obtained separately.",
+      "files": {
+        "eval/FIELD-TEST-flask.md": "f27facede4fb6bbe2620f38260618263284c23fd6222e2b351c0e3fc282ff976",
+        "eval/FIELD-TESTS.md": "87ed7dc4b38e54ada38bddd20fce8c17ad998f2dfe53b8242ff9e879d5257c4d"
+      }
+    },
+    {
+      "kind": "public-benchmark",
+      "source": "https://github.com/xiaowu0162/LongMemEval",
+      "redistribution": "LongMemEval question IDs and derived measurements. SWE-bench Lite and DependEval aggregates are covered by their listed sources.",
+      "files": {
+        "eval/PUBLIC-BENCHMARKS-2026-11.md": "2688e6643f44aa935af426c2036db46e4b4a34c855bf3c26d57698735f01870e",
+        "eval/public-benchmarks-2026-11.json.gz": "1c95396c245008a8b840a3e6328b0bda908f9309a2485bf14e50ed0c6f350e03"
+      }
+    }
+  ]
+}

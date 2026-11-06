@@ -1,0 +1,34 @@
+name: Change proposal
+description: Propose a defined change to Muninn's behavior or interface.
+title: "Proposal: "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: State the user problem and its current consequence.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: State the observable behavior that should change.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives and limits
+      description: State relevant alternatives, trade-offs, or unsupported cases.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Provide a reproduction, measurement, or source when one exists.
+    validations:
+      required: false

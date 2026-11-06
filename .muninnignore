@@ -1,0 +1,12 @@
+# Generated trees that are not knowledge.
+build/
+dist/
+htmlcov/
+graphify-out/
+eval/corpus/
+eval/code_retrieval/cache/
+eval/code_retrieval/runs/
+eval/competitive/cache/
+eval/competitive/runs/
+eval/longmemeval/data/
+eval/longmemeval/bundles/

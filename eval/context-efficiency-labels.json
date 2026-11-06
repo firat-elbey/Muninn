@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "frozen_before_candidate_run": true,
+  "questions": [
+    {"id":"aurora-01","query":"What port does the aurora postgres database listen on?","required":[["7433"]]},
+    {"id":"aurora-02","query":"What port does the aurora redis cache run on?","required":[["6390"]]},
+    {"id":"aurora-03","query":"What is the wireguard vpn endpoint (host and port) for remote access?","required":[["wg.example.com:51821"]]},
+    {"id":"aurora-04","query":"Where do the nightly backups go?","required":[["minio","192.0.2.30"]]},
+    {"id":"aurora-05","query":"Which software serves LAN DNS on the gateway?","required":[["unbound"]]},
+    {"id":"aurora-06","query":"How long are service logs retained?","required":[["90 days"]]},
+    {"id":"aurora-07","query":"Which message queue do aurora services use for async jobs?","required":[["nats"]]},
+    {"id":"aurora-08","query":"What host (ip or hostname) runs the aurora postgres primary?","required":[["192.0.2.10","db1.aurora.lan"]]},
+    {"id":"aurora-09","query":"Roughly how long does a full database restore take?","required":[["40 min"]]},
+    {"id":"aurora-10","query":"Which bucket do the ml experiment artifacts land in?","required":[["aurora-ml"]]},
+    {"id":"aurora-11","query":"Where do aurora service secrets live?","required":[["vault"]]},
+    {"id":"aurora-12","query":"How is direct port access to internal services restricted?","required":[["admin vlan"]]},
+    {"id":"aurora-13","query":"Through which host and port does external ssh enter the lan?","required":[["bastion.example.com"],["2222"]]},
+    {"id":"aurora-14","query":"Which vlan is the iot wifi mapped to?","required":[["vlan 30"]]},
+    {"id":"aurora-15","query":"What are the steps to onboard a new aurora service?","required":[["sso proxy"],["scrape"],["approle"],["allowlist"],["grafana dashboard"]]},
+    {"id":"aurora-16","query":"Who is in the oncall rotation?","required":[["dana"],["robin"]]},
+    {"id":"aurora-17","query":"What channel naming pattern does the worker consume from?","required":[["aurora.jobs"]]},
+    {"id":"aurora-18","query":"You are preparing the deploy of the aurora worker. Which host do you watch during rollout?","required":[["grafana.aurora.lan"]]}
+  ],
+  "adversarial": [
+    {"id":"frontmatter","query":"What is the active Nebula database port?","required":[["8271"]],"forbidden":["1113"],"notes":[{"path":"old.md","title":"Nebula database port","body":"The active Nebula database port was 1113."},{"path":"current.md","title":"Nebula database port correction","supersedes":["old.md"],"body":"The active Nebula database port is 8271."}]},
+    {"id":"late-evidence","query":"What is the Polaris archive retention period?","required":[["217 days"]],"notes":[{"path":"retention.md","title":"Polaris operations","padding_paragraphs":18,"body":"The Polaris archive retention period is 217 days."}]},
+    {"id":"qualification","query":"What Atlas retry limits apply to active replicas and recovery replicas?","required":[["8 attempts"],["2 attempts"],["during recovery"]],"notes":[{"path":"retry.md","title":"Atlas replica operation","padding_paragraphs":8,"body":"The Atlas retry limit is 8 attempts for active replicas. Recovery replicas permit 2 attempts. This exception applies only during recovery."}]},
+    {"id":"no-match","query":"quasar azimuth zephyr","required":[],"no_match":true,"notes":[{"path":"unrelated.md","title":"Printer setup","body":"The printer uses an ordinary paper tray."}]}
+  ]
+}

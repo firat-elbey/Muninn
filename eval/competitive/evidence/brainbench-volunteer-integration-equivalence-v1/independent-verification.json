@@ -1,0 +1,13 @@
+{
+  "decisions": {
+    "development": 474,
+    "holdout": 81,
+    "total": 555
+  },
+  "method": "brainbench-volunteer-integration-independent-cli-verification-v1",
+  "mismatches": [],
+  "production_source_tree": "ddda2f9477e478e81da7532977f487b71c85f522",
+  "schema": 1,
+  "verdict": "PASS",
+  "verified_result_sha256": "c78f21d60e5dd8a1355777ad7d181c0fed85febe24df9f825e39b213d2da1e29"
+}

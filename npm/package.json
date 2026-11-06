@@ -1,0 +1,23 @@
+{
+  "name": "muninn-kb",
+  "version": "0.2.1",
+  "description": "Portable Markdown memory and source retrieval for coding agents",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/firat-elbey/Muninn.git",
+    "directory": "npm"
+  },
+  "bin": {
+    "muninn": "bin/muninn.js"
+  },
+  "os": ["darwin", "linux"],
+  "engines": {
+    "node": ">=18"
+  },
+  "files": ["bin/muninn.js", "provision.cjs", "dist"],
+  "scripts": {
+    "prepack": "python3 prepare.py",
+    "install": "node provision.cjs"
+  }
+}
