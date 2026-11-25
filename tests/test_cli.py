@@ -51,7 +51,7 @@ class TestHelpLanguage(unittest.TestCase):
             "pin", "supersede", "recall", "pack", "volunteer", "goal",
             "intent", "sync", "install", "setup", "uninstall", "adopt",
             "style", "doctor", "feedback", "evolve", "journal",
-            "import-transcripts", "lesson", "review", "prime", "observe",
+            "import-transcripts", "bootstrap", "lesson", "review", "prime", "observe",
             "hook", "consolidate", "stats", "index",
         ]
         prohibited = (
@@ -374,8 +374,8 @@ class TestLazyCliImports(unittest.TestCase):
             "sys.stdin = io.StringIO(json.dumps({'session_id': 's1', 'tool_name': 'Read', "
             "'tool_input': {'file_path': '/nonexistent/file.py'}}))\n"
             f"cli.main(['--root', {root!r}, 'hook', 'post-tool'])\n"
-            "heavy = {'muninn.demo', 'muninn.enrich', 'muninn.export', 'muninn.extract', "
-            "'muninn.ingest', 'muninn.source_retrieval', 'muninn.sync', 'muninn.viz'}\n"
+            "heavy = {'muninn.bootstrap', 'muninn.demo', 'muninn.enrich', 'muninn.export', "
+            "'muninn.extract', 'muninn.ingest', 'muninn.source_retrieval', 'muninn.sync', 'muninn.viz'}\n"
             "loaded = sorted(heavy.intersection(sys.modules))\n"
             "assert not loaded, f'Unexpected eager imports: {loaded}'\n"
             "assert hasattr(cli.viz, 'write_html')\n"
