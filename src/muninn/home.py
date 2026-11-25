@@ -30,6 +30,13 @@ MARKER = "home.json"          # .muninn/home.json marks a home bundle.
 REGISTRY = "rooms.json"       # .muninn/rooms.json: private, machine-local
 POINTER_MARK = "<!-- muninn:home"
 ROOM_KEYS = 512               # Maximum number of registered rooms.
+AMBIENT_EXCLUDED_PARTS = frozenset({
+    ".claude",
+    ".codex",
+    ".gemini",
+    ".grok",
+    ".muninn",
+})
 
 HOME_NOTE = """\
 Muninn organizes project knowledge in one home directory.
@@ -158,15 +165,29 @@ def _slug(name: str) -> str:
     return s or "project"
 
 
+def _is_ambient_excluded(path: str) -> bool:
+    """Return whether ``path`` resides inside an agent runtime or hidden home directory."""
+    parts = [part.lower() for part in os.path.normpath(path).split(os.sep) if part]
+    if AMBIENT_EXCLUDED_PARTS.intersection(parts):
+        return True
+    home_dir = os.path.realpath(os.path.expanduser("~"))
+    if path.startswith(home_dir + os.sep):
+        first = os.path.relpath(path, home_dir).split(os.sep, 1)[0]
+        if first.startswith("."):
+            return True
+    return False
+
+
 def room_for(root: str, workdir: str, create: bool = False,
              ambient: bool = False) -> str | None:
     """The room a project belongs to, as a bundle-relative prefix
     (``projects/<slug>``). Unknown project + ``create`` registers it :
     the organic-growth entry point (first activity builds the room).
     The brain itself (and anything inside it) is never a room.
-    ``ambient`` callers (hooks) only mint rooms for real git projects:
-    a stray dotfile or download read must not become a room. Explicit
-    adopt may room any folder."""
+    ``ambient`` callers (hooks) only mint rooms for real git projects
+    outside hidden agent or dotfile directories: a stray dotfile, cache,
+    or scratch directory must not become a room. Explicit adopt may room
+    any folder."""
     root = os.path.abspath(root)
     top, is_repo = _toplevel(workdir)
     brain = os.path.realpath(root)
@@ -175,7 +196,8 @@ def room_for(root: str, workdir: str, create: bool = False,
     reg = rooms(root)
     slug = reg.get(top)
     if slug is None:
-        if (not create or (ambient and not is_repo)
+        if (not create
+                or (ambient and (not is_repo or _is_ambient_excluded(top)))
                 or len(reg) >= ROOM_KEYS):
             return None
         slug = _slug(os.path.basename(top))

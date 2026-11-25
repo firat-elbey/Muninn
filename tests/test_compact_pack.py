@@ -190,3 +190,28 @@ def test_codex_hook_context_settings_belong_to_command_handler(tmp_path):
     handler = group["hooks"][0]
     assert handler["additionalContextLimit"] == 2500
     assert handler["statusMessage"] == "Loading Muninn context"
+
+
+def test_pack_digest_ignores_volatile_scores_and_detects_content_changes():
+    from muninn.recall import pack_digest
+
+    pack_a = (
+        "### DB port (notes/db-port.md)\n"
+        "*why loaded: cue-match 2.91*\n"
+        "Body lines 1-1:\n"
+        "postgres listens on 7433  \n"
+    )
+    pack_b = (
+        "\n### DB port (notes/db-port.md)\n"
+        "*why loaded: cue-match 1.04; co-used with api.md*\n"
+        "Body lines 1-1:\n"
+        "postgres listens on 7433\n\n"
+    )
+    pack_c = (
+        "### DB port (notes/db-port.md)\n"
+        "*why loaded: cue-match 1.04*\n"
+        "Body lines 1-1:\n"
+        "postgres listens on 5432\n"
+    )
+    assert pack_digest(pack_a) == pack_digest(pack_b)
+    assert pack_digest(pack_a) != pack_digest(pack_c)

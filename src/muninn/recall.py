@@ -12,6 +12,7 @@ deterministic for a fixed bundle and sidecar state.
 
 from __future__ import annotations
 
+import hashlib
 import re
 from dataclasses import replace
 
@@ -51,6 +52,7 @@ __all__ = (
     "cues_from_goals",
     "estimate_tokens",
     "goal_alignment",
+    "pack_digest",
     "recall",
     "relevance",
     "tokens",
@@ -58,10 +60,25 @@ __all__ = (
 
 MODES = ("muninn", "muninn-walk", "flat", "dump")
 PACK_NOTE_FLOOR = 80  # per-note token floor in a pack (plus title + why)
+_WHY_LOADED_LINE = re.compile(r"^\*why loaded: [^\n]*\*\s*$")
 
 
 def estimate_tokens(text: str) -> int:
     return max(1, len(text) // 4)
+
+
+def pack_digest(text: str) -> str:
+    """Return a content digest that ignores volatile activation scores."""
+    normalized = [
+        line.rstrip()
+        for line in (text or "").splitlines()
+        if not _WHY_LOADED_LINE.match(line.strip())
+    ]
+    while normalized and not normalized[0]:
+        normalized.pop(0)
+    while normalized and not normalized[-1]:
+        normalized.pop()
+    return hashlib.sha256("\n".join(normalized).encode("utf-8")).hexdigest()
 
 
 # -- ranking (shared by recall and context_pack) -----------------------------

@@ -13,24 +13,43 @@ import subprocess
 import sys
 import time
 
-from . import __version__, enrich, extract, home, skill, source_retrieval, style, viz
-from .demo import run_demo
+from . import __version__, home, skill, style
 from .dynamics import Dynamics, repository_identity
-from .export import export_graph
-from .ingest import import_graphify
-from .observe import (KINDS, TOOL_KINDS, current_branch, hook_config,
-                      hook_payload, infer_session, inflight_section,
-                      lessons_section, observe_event, stdin_text)
-from .sync import SYNC_REF, SyncError, sync as run_sync
-from .recall import (context_pack, goal_alignment, prime_cue, recall,
-                     recall_explain, tokens)
 from .evolve import evolve_if_due, evolve_once, note_feedback, whisper_section
 from .journal import (add_episode, import_transcripts, scrub, threads_of,
                       threads_section)
+from .observe import (KINDS, TOOL_KINDS, current_branch, dedupe_session_digest,
+                      hook_config, hook_payload, hook_prompt_query,
+                      infer_session, inflight_section, lessons_section,
+                      observe_event, stdin_text)
+from .recall import (context_pack, goal_alignment, pack_digest, prime_cue,
+                     recall, recall_explain, tokens)
 from .review import (recent_reviews, review_if_due, review_session,
                      session_metrics)
 from .store import Bundle, generated_stamp
 from .volunteer import volunteer_pack
+
+SYNC_REF = "refs/muninn/ledger"
+_LAZY_SUBMODULES = frozenset({
+    "demo",
+    "enrich",
+    "export",
+    "extract",
+    "ingest",
+    "source_retrieval",
+    "sync",
+    "viz",
+})
+
+
+def __getattr__(name: str):
+    if name in _LAZY_SUBMODULES:
+        import importlib
+
+        module = importlib.import_module(f".{name}", __package__)
+        globals()[name] = module
+        return module
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 def _bundle(args) -> Bundle:
@@ -39,10 +58,22 @@ def _bundle(args) -> Bundle:
 
 def cmd_demo(args):
     """Narrated one-minute tour on a throwaway bundle (never your notes)."""
+    from .demo import run_demo
+
     run_demo()
 
 
 def cmd_init(args):
+    if getattr(args, "home_", False):
+        try:
+            created = home.init_home(args.root)
+        except (OSError, ValueError) as error:
+            raise SystemExit(
+                f"muninn init: cannot initialize the home bundle: {error}"
+            ) from None
+        verb = "initialized" if created else "verified existing"
+        print(f"{verb} muninn home bundle at {os.path.abspath(args.root)}")
+        return
     os.makedirs(args.root, exist_ok=True)
     # the sidecar is per-consumer usage memory: gitignored by default
     # (SPEC §2), so a `git init`-ed bundle never commits a personal ledger
@@ -79,6 +110,8 @@ def cmd_add(args):
 
 def cmd_import(args):
     """Import a graphify graph.json into the bundle as notes."""
+    from .ingest import import_graphify
+
     b = _bundle(args)
     try:
         written, skipped = import_graphify(b, args.graph_json, subdir=args.subdir,
@@ -96,6 +129,8 @@ def cmd_import(args):
 
 def _import_source_graph(bundle, graph, source_path, subdir="extracted"):
     """Keep project and file identities stable across partial source scans."""
+    from . import extract
+
     source_root, _is_repo = home._toplevel(source_path)
     input_root = os.path.realpath(source_path)
     if not os.path.isdir(input_root):
@@ -129,6 +164,8 @@ def _emit_graph(graph, args):
     """The shared output tail of `extract` and `enrich`: the config-secret
     notice at the point of use, the --json write, the --into import, and the
     dry-run hint. One place, so the two commands can never drift."""
+    from . import extract
+
     s = extract.summarize(graph)
     cfg = extract.config_value_count(graph)
     if cfg and (args.json or args.into):  # secret-exposure notice at point of use
@@ -158,6 +195,8 @@ def cmd_extract(args):
     """Deterministic tree-sitter pass over a file or folder (zero LLM):
     print a summary, then write graph.json (--json) and/or import notes into
     a bundle (--into). Neither → a dry-run summary only."""
+    from . import extract
+
     if not extract.available():
         print("tree-sitter not installed. Run the default release installer, "
               "then run `muninn doctor --parsers`.")
@@ -196,6 +235,8 @@ def cmd_enrich(args):
     the repo), MUNINN_ENRICH_CMD (your agent CLI, prompt on stdin), or
     MUNINN_ENRICH_URL (a local /v1/chat/completions server). With none of
     them the base is written and nothing is inferred (fail-soft)."""
+    from . import enrich, extract
+
     if not extract.available():
         print("tree-sitter not installed. Run the default release installer, "
               "then run `muninn doctor --parsers` before enrichment.")
@@ -291,6 +332,8 @@ def cmd_build(args):
     top; either alone still builds. graphify's scratch goes OUTSIDE the
     scanned folder (the bundle's sidecar, or $GRAPHIFY_OUT) so scanning a repo
     never dirties it."""
+    from . import enrich, extract
+
     folder = os.path.abspath(args.folder)
     # 1. deterministic base: tree-sitter over the folder, no model in the loop
     if extract.available():
@@ -331,6 +374,9 @@ def _graphify_layer(args, folder: str) -> None:
     """cmd_build's optional second layer: deep graphify code nodes on
     top of the tree-sitter base. Every early return here still lands on
     cmd_build's viz refresh."""
+    from . import extract
+    from .ingest import import_graphify
+
     exe = shutil.which("graphify")
     if not exe:
         extra = (" (optional: adds deep call-graph nodes on top of the "
@@ -389,6 +435,9 @@ def _refresh_viz(root: str) -> None:
     a multi-minute render) and fail-soft (a viz problem must never fail
     a build)."""
     try:
+        from . import viz
+        from .export import export_graph
+
         b = Bundle(root)
         if not b.notes:
             return
@@ -411,6 +460,9 @@ def cmd_viz(args):
     """SEE the knowledge: the fused graph (notes x links x usage) as one
     self-contained offline HTML file: or, with --mermaid, a bounded top-N
     diagram that renders inline in chat/markdown (inside a coding agent)."""
+    from . import viz
+    from .export import export_graph
+
     b = _bundle(args)
     d = Dynamics(args.root)
     g = export_graph(b, d)
@@ -437,6 +489,8 @@ def cmd_skill(args):
 
 def cmd_export_graph(args):
     """Emit the fused knowledge graph (notes x links x usage) as JSON."""
+    from .export import export_graph
+
     b = _bundle(args)
     d = Dynamics(args.root)
     g = export_graph(b, d)
@@ -502,6 +556,8 @@ def cmd_pack(args):
 
 def cmd_source_index(args):
     """Build the private persistent index for one source directory."""
+    from . import source_retrieval
+
     try:
         index = source_retrieval.build_source_index(args.root, args.path)
     except (OSError, ValueError) as error:
@@ -547,6 +603,8 @@ def _source_json(result, query: str, mode: str) -> dict:
 
 def cmd_source_search(args):
     """Search source through the validated BM25F-led hybrid ranking."""
+    from . import source_retrieval
+
     try:
         result = source_retrieval.search_source(
             args.root,
@@ -701,6 +759,9 @@ def cmd_intent(args):
 
 def cmd_sync(args):
     """Synchronize append-only ledger events through a dedicated Git reference."""
+    from .sync import SyncError
+    from .sync import sync as run_sync
+
     try:
         r = run_sync(args.root, remote=args.remote, ref=args.ref,
                      push=not args.pull_only, repo=args.repo)
@@ -1040,15 +1101,18 @@ def _setup_manifest(args) -> None:
     print("Muninn setup would modify only these paths:")
     print(f"  {brain}/: home knowledge base "
           + ("(exists)" if home.is_home(brain) else "(would create)"))
-    print(f"  {canonical}: canonical global file "
-          + ("(exists: gains a two-line pointer at most)"
-             if os.path.isfile(canonical) else "(would create)"))
-    for slot in GLOBAL_SLOTS:
-        p = os.path.expanduser(slot)
-        state = ("symlink present" if os.path.islink(p)
-                 else "REAL FILE: left as-is" if os.path.exists(p)
-                 else "would symlink -> canonical")
-        print(f"  {slot}: {state}")
+    if getattr(args, "no_instructions", False):
+        print("  instruction files: skipped (--no-instructions)")
+    else:
+        print(f"  {canonical}: canonical global file "
+              + ("(exists: gains a two-line pointer at most)"
+                 if os.path.isfile(canonical) else "(would create)"))
+        for slot in GLOBAL_SLOTS:
+            p = os.path.expanduser(slot)
+            state = ("symlink present" if os.path.islink(p)
+                     else "REAL FILE: left as-is" if os.path.exists(p)
+                     else "would symlink -> canonical")
+            print(f"  {slot}: {state}")
     for label, target, _adapter in HOOK_TARGETS:
         path = os.path.expanduser(target)
         print(f"  {path}: {label} lifecycle hooks merged in "
@@ -1067,9 +1131,21 @@ def cmd_setup(args):
     if args.dry_run:
         _setup_manifest(args)
         return
-    ok = _install_home(args, show_paste=False)
     brain = os.path.abspath(os.path.expanduser(
         args.brain or home.home_root()))
+    if getattr(args, "no_instructions", False):
+        try:
+            fresh = home.init_home(brain)
+        except (OSError, ValueError) as error:
+            raise SystemExit(
+                f"muninn setup: cannot initialize the home bundle: {error}"
+            ) from None
+        print(("Initialized" if fresh else "Found")
+              + f" the home knowledge base at {brain}. Instruction files were "
+                "left unchanged (--no-instructions).")
+        ok = True
+    else:
+        ok = _install_home(args, show_paste=False)
     for label, target, adapter in HOOK_TARGETS:
         verdict = _wire_hook_file(brain, target, adapter)
         print(f"\n{os.path.expanduser(target)}: {verdict}")
@@ -1365,19 +1441,22 @@ def _doctor_home(args) -> None:
     print(f"  rooms: {len(home.rooms(brain))} registered")
     canonical = os.path.abspath(os.path.expanduser(
         args.source or os.path.join("~", "AGENTS.md")))
-    try:
-        with open(canonical, encoding="utf-8") as fh:
-            text = fh.read()
-    except OSError:
-        text = ""
-    wired = _protocol_matches_root(text, brain)
-    if PROTOCOL_BEGIN not in text and PROTOCOL_END not in text:
-        wired = wired or home.pointer_routes_protocol(text, brain)
-    print(f"  {canonical}: "
-          + ("points at muninn" if wired
-             else "NO muninn pointer (fix: muninn install --home)"))
-    ok &= wired
-    ok &= _global_wiring_status(canonical)
+    if getattr(args, "no_instructions", False):
+        print("  instruction files: skipped (--no-instructions)")
+    else:
+        try:
+            with open(canonical, encoding="utf-8") as fh:
+                text = fh.read()
+        except OSError:
+            text = ""
+        wired = _protocol_matches_root(text, brain)
+        if PROTOCOL_BEGIN not in text and PROTOCOL_END not in text:
+            wired = wired or home.pointer_routes_protocol(text, brain)
+        print(f"  {canonical}: "
+              + ("points at muninn" if wired
+                 else "NO muninn pointer (fix: muninn install --home)"))
+        ok &= wired
+        ok &= _global_wiring_status(canonical)
     # install --home prints hook configuration without modifying clients.
     # Once setup creates any managed surface, all setup surfaces are required.
     skl = os.path.expanduser(os.path.join("~", ".claude", "skills",
@@ -1421,6 +1500,8 @@ def _doctor_home(args) -> None:
 def cmd_doctor(args):
     """Verify agent instruction files and confirm that the bundle loads."""
     if args.parsers:
+        from . import extract
+
         issues = extract.parser_issues()
         if issues:
             print("parsers: unavailable or incompatible")
@@ -1695,6 +1776,51 @@ def cmd_observe(args):
         print(f"muninn observe: {e}", file=sys.stderr)
 
 
+def _emit_hook_output(
+        text: str, adapter: str, gemini_event: str | None = None
+) -> None:
+    cleaned = text.strip("\n")
+    if adapter == "gemini":
+        if cleaned and gemini_event:
+            print(json.dumps({"hookSpecificOutput": {
+                "hookEventName": gemini_event,
+                "additionalContext": cleaned,
+            }}))
+        else:
+            print("{}")
+        return
+    if cleaned:
+        print(cleaned)
+
+
+def _render_primed_sections(
+        b: Bundle,
+        d: Dynamics,
+        cue: str,
+        budget: int,
+        session: str | None,
+        workdir: str,
+        reactivate: bool = True,
+) -> str:
+    where = threads_section(
+        b, d, cue=cue, session=session if reactivate else None,
+        reactivate=reactivate,
+    )
+    pack = context_pack(
+        b, d, cue, budget=budget, primed=True,
+        session=session if reactivate else None, reactivate=reactivate,
+    )
+    lessons = lessons_section(
+        b, d, workdir=workdir, session=session if reactivate else None,
+        reactivate=reactivate,
+    )
+    w = whisper_section(d)
+    inflight = inflight_section(b, d, workdir=workdir)
+    return "\n\n".join(
+        section for section in (where, pack, lessons, w, inflight) if section
+    )
+
+
 def _hook(args):
     if args.event == "print-config":
         root = args.root if args.root != "." else os.environ.get(
@@ -1702,9 +1828,33 @@ def _hook(args):
         print(hook_config(os.path.abspath(os.path.expanduser(root)),
                           adapter=args.adapter))
         return
+    raw = stdin_text()
+    if args.event == "user-prompt":
+        sid, query, detected = hook_prompt_query(raw)
+        if (not query or not tokens(query)
+                or args.record_only or detected == "grok"):
+            _emit_hook_output("", args.adapter)
+            return
+        b = _bundle(args)
+        d = Dynamics(args.root)
+        prompt_budget = args.budget if args.budget != 900 else 450
+        pack = context_pack(
+            b, d, query, budget=prompt_budget, k=3,
+            compact=True, index=False, reactivate=False,
+        )
+        if not pack.strip() or pack.strip().endswith("No matching notes."):
+            _emit_hook_output("", args.adapter)
+            return
+        if not getattr(args, "no_dedupe", False) and dedupe_session_digest(
+            args.root, sid, pack_digest(pack)
+        ):
+            _emit_hook_output("", args.adapter)
+            return
+        _emit_hook_output(pack, args.adapter, gemini_event="BeforeAgent")
+        return
     # PRIVACY: session_id and file_path are the ONLY hook-JSON fields that
     # may flow onward (tool_name picks touch-vs-encode, then dies here)
-    sid, tool, fp, adapter = hook_payload(stdin_text())
+    sid, tool, fp, adapter = hook_payload(raw)
     if args.event == "session-end":  # ambient decay + the reflection loop
         d = Dynamics(args.root)
         d.consolidate_if_due()
@@ -1715,6 +1865,7 @@ def _hook(args):
         else:
             review_if_due(b, d, workdir=os.getcwd())
         evolve_if_due(b, d)
+        _emit_hook_output("", args.adapter)
         return
     b = _bundle(args)
     d = Dynamics(args.root)
@@ -1731,6 +1882,17 @@ def _hook(args):
                     os.path.abspath(os.path.expanduser(fp))), create=True,
                     ambient=True)
             observe_event(b, d, kind, fp, session=sid, prefer=prefer)
+        _emit_hook_output("", args.adapter)
+        return
+    if args.event == "post-compact":
+        if args.record_only or adapter == "grok":
+            _emit_hook_output("", args.adapter)
+            return
+        cue = prime_cue(b, d, workdir=os.getcwd())
+        rendered = _render_primed_sections(
+            b, d, cue, args.budget, sid, os.getcwd(), reactivate=False
+        )
+        _emit_hook_output(rendered, args.adapter, gemini_event="SessionStart")
         return
     # session-start: decay check, mark the session, emit the prime pack
     if home.is_home(args.root):  # a session opening in a new project is
@@ -1741,21 +1903,12 @@ def _hook(args):
     cue = prime_cue(b, d, workdir=os.getcwd())
     d.session_begin(sid, cue=cue)  # the cue is what review learns FROM
     if args.record_only or adapter == "grok":
+        _emit_hook_output("", args.adapter)
         return
-    where = threads_section(b, d, cue=cue, session=sid)
-    if where:  # continuity FIRST: where we left off, then repo facts
-        print(where + "\n")
-    print(context_pack(b, d, cue, budget=args.budget, primed=True,
-                       session=sid))
-    lessons = lessons_section(b, d, workdir=os.getcwd(), session=sid)
-    if lessons:  # Corrective knowledge appears when its path guard matches.
-        print("\n" + lessons)
-    w = whisper_section(d)
-    if w:  # unconfirmed preferences: lean this way, not yet law
-        print("\n" + w)
-    inflight = inflight_section(b, d, workdir=os.getcwd())
-    if inflight:  # other agents' announced work lands in the session too
-        print("\n" + inflight)
+    rendered = _render_primed_sections(
+        b, d, cue, args.budget, sid, os.getcwd(), reactivate=True
+    )
+    _emit_hook_output(rendered, args.adapter, gemini_event="SessionStart")
 
 
 def cmd_hook(args):
@@ -1860,10 +2013,17 @@ def main(argv=None):
         help="Run a short demonstration in a temporary bundle.",
     ).set_defaults(fn=cmd_demo)
 
-    sub.add_parser(
+    ini = sub.add_parser(
         "init",
         help="Create a bundle at --root with an index and private sidecar.",
-    ).set_defaults(fn=cmd_init)
+    )
+    ini.add_argument(
+        "--home",
+        dest="home_",
+        action="store_true",
+        help="Create a home bundle layout without modifying instruction or hook files.",
+    )
+    ini.set_defaults(fn=cmd_init)
 
     a = sub.add_parser(
         "add",
@@ -2215,6 +2375,12 @@ def main(argv=None):
                          "~/AGENTS.md.")
     se.add_argument("--dry-run", dest="dry_run", action="store_true",
                     help="Print the affected paths without changing them.")
+    se.add_argument(
+        "--no-instructions",
+        dest="no_instructions",
+        action="store_true",
+        help="Configure the home bundle, hooks, and skill without changing instruction files.",
+    )
     se.set_defaults(fn=cmd_setup, home_=True, global_=False, copy=False,
                     dir=".")
 
@@ -2282,6 +2448,12 @@ def main(argv=None):
     dr.add_argument("--from", dest="source", default=None,
                     help="Set the canonical personal file. The default is "
                          "~/AGENTS.md.")
+    dr.add_argument(
+        "--no-instructions",
+        dest="no_instructions",
+        action="store_true",
+        help="Skip instruction-file checks during home diagnostics.",
+    )
     dr.set_defaults(fn=cmd_doctor)
 
     fb = sub.add_parser(
@@ -2414,15 +2586,26 @@ def main(argv=None):
             "The command always exits successfully."
         ),
     )
-    hk.add_argument("event", choices=["session-start", "post-tool",
-                                      "session-end", "print-config"])
+    hk.add_argument(
+        "event",
+        choices=[
+            "session-start",
+            "user-prompt",
+            "post-compact",
+            "post-tool",
+            "session-end",
+            "print-config",
+        ],
+    )
     hk.add_argument("--budget", type=int, default=900,
-                    help="Set the context budget for session-start.")
-    hk.add_argument("--adapter", choices=["claude", "codex", "grok"],
+                    help="Set the context budget for session-start, post-compact, or user-prompt.")
+    hk.add_argument("--adapter", choices=["claude", "codex", "gemini", "grok"],
                     default="claude",
-                    help="Select the format emitted by print-config.")
+                    help="Select the hook envelope for print-config or structured output.")
     hk.add_argument("--record-only", action="store_true",
                     help="Record session-start without emitting a context pack.")
+    hk.add_argument("--no-dedupe", action="store_true",
+                    help="Emit user-prompt packs even when identical to the prior pack in the session.")
     hk.set_defaults(fn=cmd_hook)
 
     sub.add_parser(

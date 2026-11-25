@@ -13,12 +13,14 @@ ledger.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import shlex
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 import zipimport
 
@@ -31,12 +33,18 @@ KINDS = ("touch", "encode", "outcome")
 TOOL_KINDS = {
     "Read": "touch",
     "Edit": "encode",
+    "MultiEdit": "encode",
     "Write": "encode",
     "read_file": "touch",
+    "view_file": "touch",
+    "replace": "encode",
+    "edit_file": "encode",
     "search_replace": "encode",
     "write": "encode",
+    "write_file": "encode",
 }
 INFLIGHT_SHOWN = 8        # bound on intents rendered into a primed pack
+DEDUPE_ENTRIES = 64       # bound on ephemeral per-session pack digests
 
 
 def map_note(bundle: Bundle, value, prefer: str | None = None) -> str | None:
@@ -283,7 +291,8 @@ def _guard_hits(guard: str, changed: str) -> bool:
 
 
 def lessons_section(bundle: Bundle, dyn: Dynamics, workdir: str | None = None,
-                    session: str | None = None) -> str:
+                    session: str | None = None,
+                    reactivate: bool = True) -> str:
     """The guard block for primed packs: lesson notes (type: lesson)
     whose ``guards:`` paths overlap the session's uncommitted changes :
     the warning arrives exactly when the mistake is about to repeat.
@@ -318,7 +327,8 @@ def lessons_section(bundle: Bundle, dyn: Dynamics, workdir: str | None = None,
         if body:
             lines.append(body if len(body) <= 600 else body[:600] + " …")
         lines.append("")
-        dyn.touch(path, kind="recall", session=session)
+        if reactivate:
+            dyn.touch(path, kind="recall", session=session)
     if len(picked) > LESSONS_SHOWN:
         lines.append(f"*(... and {len(picked) - LESSONS_SHOWN} more: "
                      "`muninn lesson` lists them)*")
@@ -340,12 +350,19 @@ def hook_payload(
     adapter = "grok" if any(
         key in data for key in ("sessionId", "toolName", "toolInput")
     ) else "generic"
+    call = data.get("tool_call")
+    if not isinstance(call, dict):
+        call = data.get("toolCall")
     ti = data.get("tool_input")
     if not isinstance(ti, dict):
         ti = data.get("toolInput")
+    if not isinstance(ti, dict) and isinstance(call, dict):
+        ti = call.get("arguments")
+        if not isinstance(ti, dict):
+            ti = call.get("args")
     fp = None
     if isinstance(ti, dict):
-        for key in ("file_path", "target_file"):
+        for key in ("file_path", "target_file", "path", "Path"):
             if isinstance(ti.get(key), str) and ti[key]:
                 fp = ti[key]
                 break
@@ -359,7 +376,72 @@ def hook_payload(
     tool = data.get("tool_name")
     if not isinstance(tool, str):
         tool = data.get("toolName")
+    if not isinstance(tool, str) and isinstance(call, dict):
+        tool = call.get("name")
     return _s(sid, 128), _s(tool), _s(fp), adapter
+
+
+def hook_prompt_query(text: str) -> tuple[str | None, str | None, str]:
+    """Read a transient prompt query in memory without persisting any field."""
+    try:
+        data = json.loads(text or "{}")
+    except (ValueError, RecursionError):
+        return None, None, "generic"
+    if not isinstance(data, dict):
+        return None, None, "generic"
+    adapter = "grok" if "sessionId" in data else "generic"
+    sid = data.get("session_id")
+    if not isinstance(sid, str):
+        sid = data.get("sessionId")
+    prompt = data.get("prompt")
+    if not isinstance(prompt, str):
+        prompt = data.get("user_prompt")
+    sid_val = sid[:128] if isinstance(sid, str) and sid else None
+    query = prompt.strip()[:2048] if isinstance(prompt, str) and prompt.strip() else None
+    return sid_val, query, adapter
+
+
+def dedupe_session_digest(
+        root: str, session_id: str | None, digest: str
+) -> bool:
+    """Return whether ``digest`` matches the latest user-prompt serve in this session.
+
+    The ephemeral cache stays outside the bundle root and records only SHA-256
+    hex digests, so prompt text, session identifiers, and note bodies never
+    enter disk storage.
+    """
+    if not session_id or not digest:
+        return False
+    uid = getattr(os, "getuid", lambda: 0)()
+    cache_dir = os.environ.get("MUNINN_DEDUPE_DIR") or os.path.join(
+        tempfile.gettempdir(), f"muninn-hook-dedupe-{uid}"
+    )
+    key = hashlib.sha256(
+        (os.path.realpath(root) + "\0" + session_id).encode("utf-8", "replace")
+    ).hexdigest()
+    path = os.path.join(cache_dir, "digests.json")
+    try:
+        os.makedirs(cache_dir, mode=0o700, exist_ok=True)
+        try:
+            with open(path, encoding="utf-8") as fh:
+                loaded = json.load(fh)
+            entries = loaded if isinstance(loaded, dict) else {}
+        except (OSError, ValueError):
+            entries = {}
+        if entries.get(key) == digest:
+            return True
+        entries.pop(key, None)
+        entries[key] = digest
+        while len(entries) > DEDUPE_ENTRIES:
+            entries.pop(next(iter(entries)))
+        tmp = f"{path}.{os.getpid()}.tmp"
+        fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
+            json.dump(entries, fh)
+        os.replace(tmp, path)
+    except OSError:
+        return False
+    return False
 
 
 def hook_fields(text: str) -> tuple[str | None, str | None, str | None]:
@@ -388,13 +470,16 @@ def _hook_command() -> str:
 
 
 def hook_config(root: str, adapter: str = "claude") -> str:
-    """Return lifecycle hooks for Claude, Codex, or Grok."""
-    if adapter not in ("claude", "codex", "grok"):
+    """Return lifecycle hooks for Claude, Codex, Gemini CLI, or Grok."""
+    if adapter not in ("claude", "codex", "gemini", "grok"):
         raise ValueError(f"unsupported hook adapter: {adapter}")
     base = f"{_hook_command()} --root {shlex.quote(root)} hook"
     tail = " 2>/dev/null || true"
     start = f"{base} session-start"
-    matcher = "Read|Edit|Write|read_file|search_replace|write"
+    matcher = (
+        "Read|Edit|MultiEdit|Write|read_file|view_file|"
+        "replace|edit_file|search_replace|write|write_file"
+    )
     start_extra = {}
     if adapter == "codex":
         start_extra = {"statusMessage": "Loading Muninn context",
@@ -402,6 +487,16 @@ def hook_config(root: str, adapter: str = "claude") -> str:
 
     def handler(action: str) -> dict:
         return {"type": "command", "command": action + tail}
+
+    if adapter == "gemini":
+        return json.dumps({"hooks": {
+            "SessionStart": [{"hooks": [
+                handler(f"{base} session-start --adapter gemini")]}],
+            "AfterTool": [{"matcher": matcher, "hooks": [
+                handler(f"{base} post-tool --adapter gemini")]}],
+            "SessionEnd": [{"hooks": [
+                handler(f"{base} session-end --adapter gemini")]}],
+        }}, indent=2)
 
     return json.dumps({"hooks": {
         "SessionStart": [{"hooks": [{**handler(start), **start_extra}]}],

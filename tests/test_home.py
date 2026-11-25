@@ -404,6 +404,65 @@ class TestHubEdges(_Tmp):
         self.assertEqual(home.room_for(self.brain, plain, create=True),
                          "projects/downloads")
 
+    def test_ambient_touches_ignore_hidden_agent_and_cache_directories(self):
+        home.init_home(self.brain)
+        fake_home = os.path.join(self.tmp, "userhome")
+        os.makedirs(fake_home, exist_ok=True)
+        hidden_repos = [
+            os.path.join(self.tmp, ".gemini", "brain", "scratch"),
+            os.path.join(self.tmp, ".claude", "plugins", "cache", "tool"),
+            os.path.join(self.tmp, ".codex", "work"),
+            os.path.join(self.tmp, ".grok", "state"),
+            os.path.join(fake_home, ".cache", "pip-repo"),
+            os.path.join(fake_home, ".local", "share", "helper"),
+            os.path.join(fake_home, ".config", "editor"),
+        ]
+        with mock.patch.dict(os.environ, {"HOME": fake_home}):
+            for repo in hidden_repos:
+                os.makedirs(repo, exist_ok=True)
+                subprocess.run(
+                    ["git", "init", "-q", repo], capture_output=True, check=True
+                )
+                with open(os.path.join(repo, "note.py"), "w", encoding="utf-8") as fh:
+                    fh.write("x = 1\n")
+                self.assertIsNone(
+                    home.room_for(self.brain, repo, create=True, ambient=True),
+                    repo,
+                )
+            scratch_file = os.path.join(hidden_repos[0], "note.py")
+            payload = json.dumps({
+                "session_id": "s-hidden",
+                "tool_name": "Write",
+                "tool_input": {"file_path": scratch_file},
+            })
+            with mock.patch("sys.stdin", io.StringIO(payload)):
+                _run_cli("--root", self.brain, "hook", "post-tool")
+            self.assertEqual(home.rooms(self.brain), {})
+            # Explicit adoption remains available when the user requests it.
+            room, _verb = home.adopt(self.brain, hidden_repos[-1])
+            self.assertEqual(room, "projects/editor")
+
+    def test_init_home_flag_creates_a_home_bundle_without_touching_instructions(self):
+        fake_home = os.path.join(self.tmp, "userhome")
+        os.makedirs(fake_home, exist_ok=True)
+        with mock.patch.dict(os.environ, {"HOME": fake_home}):
+            out, _ = _run_cli("--root", self.brain, "init", "--home")
+            self.assertIn("home bundle", out)
+            self.assertTrue(home.is_home(self.brain))
+            for folder in ("projects", "threads", "lessons", "style"):
+                self.assertTrue(os.path.isdir(os.path.join(self.brain, folder)))
+            self.assertEqual(os.listdir(fake_home), [])
+            out_again, _ = _run_cli("--root", self.brain, "init", "--home")
+            self.assertIn("home bundle", out_again)
+        linked_root = os.path.join(self.tmp, "linked-brain")
+        os.makedirs(linked_root, exist_ok=True)
+        outside = os.path.join(self.tmp, "outside.txt")
+        with open(outside, "w", encoding="utf-8") as fh:
+            fh.write("keep\n")
+        os.symlink(outside, os.path.join(linked_root, ".gitignore"))
+        with self.assertRaises(SystemExit):
+            _run_cli("--root", linked_root, "init", "--home")
+
     def test_a_corrupt_registry_never_hands_a_room_to_another_project(self):
         home.init_home(self.brain)
         a = self._project(os.path.join("clients", "web"))

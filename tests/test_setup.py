@@ -430,6 +430,42 @@ class TestDoctorSeesTheWires(_FakeHome):
         self.assertIn("codex hooks: not written or stale", out.getvalue())
         self.assertIn("home configuration: invalid", out.getvalue())
 
+    def test_setup_no_instructions_wires_hooks_without_touching_instruction_files(self):
+        canonical = os.path.join(self.fake, "AGENTS.md")
+        with open(canonical, "w", encoding="utf-8") as fh:
+            fh.write("# Custom instructions\n")
+        codex_md = os.path.join(self.fake, ".codex", "AGENTS.md")
+        os.makedirs(os.path.dirname(codex_md), exist_ok=True)
+        with open(codex_md, "w", encoding="utf-8") as fh:
+            fh.write("# Separate codex instructions\n")
+        dry_out, _ = _run_cli(
+            "setup", "--brain", self.brain, "--no-instructions", "--dry-run"
+        )
+        self.assertIn("skipped (--no-instructions)", dry_out)
+        self.assertFalse(os.path.exists(self.brain))
+        code, out, _ = _run_cli_status(
+            "setup", "--brain", self.brain, "--no-instructions"
+        )
+        self.assertEqual(code, 0, out)
+        self.assertTrue(home.is_home(self.brain))
+        with open(canonical, encoding="utf-8") as fh:
+            self.assertEqual(fh.read(), "# Custom instructions\n")
+        with open(codex_md, encoding="utf-8") as fh:
+            self.assertEqual(fh.read(), "# Separate codex instructions\n")
+        self.assertFalse(
+            os.path.lexists(os.path.join(self.fake, ".claude", "CLAUDE.md"))
+        )
+        for path in (self.settings, self.codex_hooks, self.grok_hooks):
+            self.assertTrue(os.path.isfile(path), path)
+        self.assertTrue(os.path.isfile(os.path.join(
+            self.fake, ".claude", "skills", "muninn", "SKILL.md"
+        )))
+        doc_code, doc_out, _ = _run_cli_status(
+            "doctor", "--home", "--brain", self.brain, "--no-instructions"
+        )
+        self.assertEqual(doc_code, 0, doc_out)
+        self.assertIn("home configuration: valid", doc_out)
+
 
 if __name__ == "__main__":
     unittest.main()

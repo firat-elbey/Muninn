@@ -330,6 +330,183 @@ class TestHook(SenseCase):
         self.assertIn("imported/api-server.md|notes/db-port.md",
                       Dynamics(self.root).coact)
 
+    def test_broader_tool_and_path_envelopes_map_without_leaking_payload_fields(self):
+        path = os.path.join(self.root, "notes", "db-port.md")
+        envelopes = [
+            ("touch", {
+                **DECOYS,
+                "session_id": "env-s1",
+                "tool_call": {"name": "view_file", "arguments": {"path": path}},
+            }),
+            ("encode", {
+                **DECOYS,
+                "session_id": "env-s1",
+                "toolCall": {"name": "edit_file", "args": {"Path": path}},
+            }),
+            ("encode", {
+                **DECOYS,
+                "session_id": "env-s2",
+                "tool_name": "MultiEdit",
+                "tool_input": {"path": path},
+            }),
+            ("encode", {
+                **DECOYS,
+                "session_id": "env-s3",
+                "tool_name": "replace",
+                "tool_input": {"file_path": path},
+            }),
+            ("encode", {
+                **DECOYS,
+                "session_id": "env-s4",
+                "tool_name": "write_file",
+                "tool_input": {"Path": path},
+            }),
+        ]
+        for expected_kind, payload in envelopes:
+            self.t += DEBOUNCE + 1
+            with mock.patch("sys.stdin", io.StringIO(json.dumps(payload))):
+                cli.main(["--root", self.root, "hook", "post-tool"])
+        kinds = [(e["kind"], e.get("session")) for e in ledger(self.root)
+                 if e["kind"] in ("touch", "encode")]
+        self.assertEqual(kinds, [
+            ("touch", "env-s1"),
+            ("encode", "env-s1"),
+            ("encode", "env-s2"),
+            ("encode", "env-s3"),
+            ("encode", "env-s4"),
+        ])
+        blob = ""
+        for dirpath, _dns, fns in os.walk(self.root):
+            for fn in fns:
+                with open(os.path.join(dirpath, fn),
+                          encoding="utf-8", errors="replace") as fh:
+                    blob += fh.read()
+        for decoy in ("DECOY", "view_file", "edit_file", "MultiEdit",
+                      "write_file", "toolCall", "tool_call"):
+            self.assertNotIn(decoy, blob)
+
+    def test_gemini_adapter_config_and_structured_json_hook_output(self):
+        cfg = json.loads(hook_config(self.root, adapter="gemini"))
+        self.assertEqual(set(cfg["hooks"]),
+                         {"SessionStart", "AfterTool", "SessionEnd"})
+        self.assertIn("--adapter gemini",
+                      json.dumps(cfg["hooks"]["SessionStart"]))
+        self.d.touch("notes/db-port.md", session="warm")
+        start_out = io.StringIO()
+        payload = json.dumps({"session_id": "gem-s1", "hook_event_name": "SessionStart"})
+        with mock.patch("sys.stdin", io.StringIO(payload)), \
+                redirect_stdout(start_out):
+            cli.main(["--root", self.root, "hook", "session-start",
+                      "--adapter", "gemini"])
+        parsed = json.loads(start_out.getvalue())
+        self.assertEqual(
+            parsed["hookSpecificOutput"]["hookEventName"], "SessionStart"
+        )
+        self.assertIn(
+            "Context pack", parsed["hookSpecificOutput"]["additionalContext"]
+        )
+        for event in ("post-tool", "session-end"):
+            buf = io.StringIO()
+            with mock.patch("sys.stdin", io.StringIO(payload)), \
+                    redirect_stdout(buf):
+                cli.main(["--root", self.root, "hook", event,
+                          "--adapter", "gemini"])
+            self.assertEqual(json.loads(buf.getvalue()), {})
+
+    def test_user_prompt_and_post_compact_hooks_stay_read_only_and_deduplicate(self):
+        self.d.touch("notes/db-port.md", session="warm")
+
+        def snapshot_root():
+            snap = {}
+            for dirpath, _dns, fns in os.walk(self.root):
+                for fn in fns:
+                    full = os.path.join(dirpath, fn)
+                    with open(full, "rb") as fh:
+                        snap[os.path.relpath(full, self.root)] = fh.read()
+            return snap
+
+        before = snapshot_root()
+        dedupe_dir = tempfile.mkdtemp(prefix="muninn-dedupe-")
+        self.addCleanup(shutil.rmtree, dedupe_dir, ignore_errors=True)
+        with mock.patch.dict(os.environ, {"MUNINN_DEDUPE_DIR": dedupe_dir}):
+            p1 = dict(DECOYS, session_id="up-1",
+                      prompt="check postgres port 7433")
+            out1 = io.StringIO()
+            with mock.patch("sys.stdin", io.StringIO(json.dumps(p1))), \
+                    redirect_stdout(out1):
+                cli.main(["--root", self.root, "hook", "user-prompt"])
+            self.assertIn("DB port", out1.getvalue())
+            self.assertIn("7433", out1.getvalue())
+            self.assertNotIn("Compact index", out1.getvalue())
+
+            # A follow-up prompt in the same session recalling identical excerpts is suppressed.
+            p2 = dict(DECOYS, session_id="up-1",
+                      prompt="verify postgres port 7433 setting")
+            out2 = io.StringIO()
+            with mock.patch("sys.stdin", io.StringIO(json.dumps(p2))), \
+                    redirect_stdout(out2):
+                cli.main(["--root", self.root, "hook", "user-prompt"])
+            self.assertEqual(out2.getvalue(), "")
+
+            # A different session receives the pack cleanly.
+            p3 = dict(DECOYS, session_id="up-2",
+                      prompt="verify postgres port 7433 setting")
+            out3 = io.StringIO()
+            with mock.patch("sys.stdin", io.StringIO(json.dumps(p3))), \
+                    redirect_stdout(out3):
+                cli.main(["--root", self.root, "hook", "user-prompt"])
+            self.assertIn("7433", out3.getvalue())
+
+            # Unmatched prompts stay silent instead of emitting boilerplate.
+            p4 = dict(DECOYS, session_id="up-2",
+                      prompt="quantum crystallography")
+            out4 = io.StringIO()
+            with mock.patch("sys.stdin", io.StringIO(json.dumps(p4))), \
+                    redirect_stdout(out4):
+                cli.main(["--root", self.root, "hook", "user-prompt"])
+            self.assertEqual(out4.getvalue(), "")
+
+            # Gemini adapter wraps BeforeAgent context as JSON and emits {} when unmatched.
+            gem_hit = io.StringIO()
+            with mock.patch("sys.stdin", io.StringIO(json.dumps(
+                dict(DECOYS, session_id="up-gem", prompt="postgres port 7433")
+            ))), redirect_stdout(gem_hit):
+                cli.main(["--root", self.root, "hook", "user-prompt",
+                          "--adapter", "gemini"])
+            gem_data = json.loads(gem_hit.getvalue())
+            self.assertEqual(
+                gem_data["hookSpecificOutput"]["hookEventName"], "BeforeAgent"
+            )
+            self.assertIn(
+                "7433", gem_data["hookSpecificOutput"]["additionalContext"]
+            )
+            gem_dup = io.StringIO()
+            with mock.patch("sys.stdin", io.StringIO(json.dumps(
+                dict(DECOYS, session_id="up-gem", prompt="postgres port 7433")
+            ))), redirect_stdout(gem_dup):
+                cli.main(["--root", self.root, "hook", "user-prompt",
+                          "--adapter", "gemini"])
+            self.assertEqual(json.loads(gem_dup.getvalue()), {})
+
+            # Post-compact re-emits the situation pack without recording recalls or session-begin.
+            compact_out = io.StringIO()
+            with mock.patch("sys.stdin", io.StringIO(json.dumps(
+                dict(DECOYS, session_id="up-1")
+            ))), redirect_stdout(compact_out):
+                cli.main(["--root", self.root, "hook", "post-compact"])
+            self.assertIn("Context pack", compact_out.getvalue())
+
+            # Neither the bundle nor the dedupe cache may retain prompt text or decoys.
+            self.assertEqual(snapshot_root(), before)
+            cache_blob = ""
+            for dirpath, _dns, fns in os.walk(dedupe_dir):
+                for fn in fns:
+                    with open(os.path.join(dirpath, fn),
+                              encoding="utf-8", errors="replace") as fh:
+                        cache_blob += fh.read()
+            for secret in ("DECOY", "postgres", "7433", "up-1", "up-2", "up-gem"):
+                self.assertNotIn(secret, cache_blob)
+
 
 class TestStandaloneHookConfig(unittest.TestCase):
     def setUp(self):
@@ -355,7 +532,7 @@ class TestStandaloneHookConfig(unittest.TestCase):
                 mock.patch("sys.executable", interpreter):
             for found in (None, "/different/muninn"):
                 with mock.patch("shutil.which", return_value=found):
-                    for adapter in ("claude", "codex", "grok"):
+                    for adapter in ("claude", "codex", "gemini", "grok"):
                         with self.subTest(found=found, adapter=adapter):
                             commands = self.commands(adapter)
                             self.assertEqual(len(commands), 3)
