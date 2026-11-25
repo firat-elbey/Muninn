@@ -31,6 +31,7 @@ The following command prints the required configuration:
 ```bash
 muninn --root ~/knowledge hook print-config
 muninn --root ~/knowledge hook print-config --adapter codex
+muninn --root ~/knowledge hook print-config --adapter gemini
 muninn --root ~/knowledge hook print-config --adapter grok
 ```
 
@@ -41,7 +42,7 @@ The resulting configuration has this form:
   "hooks": {
     "SessionStart": [{"hooks": [{"type": "command",
       "command": "muninn --root /path/to/knowledge hook session-start 2>/dev/null || true"}]}],
-    "PostToolUse": [{"matcher": "Read|Edit|Write|read_file|search_replace|write", "hooks": [{"type": "command",
+    "PostToolUse": [{"matcher": "Read|Edit|MultiEdit|Write|read_file|view_file|replace|edit_file|search_replace|write|write_file", "hooks": [{"type": "command",
       "command": "muninn --root /path/to/knowledge hook post-tool 2>/dev/null || true"}]}],
     "SessionEnd": [{"hooks": [{"type": "command",
       "command": "muninn --root /path/to/knowledge hook session-end 2>/dev/null || true"}]}]
@@ -60,13 +61,16 @@ Each hook has one defined function:
 - `session-start` writes a context pack to standard output and records the
   session identifier. Recall events receive the same identifier, which permits
   bounded co-use learning.
-- `post-tool` records a `Read` as `touch` and an `Edit` or `Write` as `encode`.
-  Muninn maps the path through the bundle tree and then through `resource:`
-  frontmatter. It discards unmapped paths and combines repeated events for the
-  same note and event type within 60 seconds.
+- `post-tool` records `Read`, `read_file`, or `view_file` as `touch` and records `Edit`, `MultiEdit`, `Write`, `replace`, `edit_file`, `search_replace`, `write`, or `write_file` as `encode`. Muninn maps the path through the bundle tree and then through `resource:` frontmatter. In a home bundle, ambient room creation ignores hidden agent state and user dotfile directories. Muninn discards unmapped paths and combines repeated events for the same note and event type within 60 seconds.
 - The `session-end` hook applies decay when due and compares served notes with notes used independently during the session.
 
+Two optional read-only hook events support mid-session recall without changing memory state:
+
+- `user-prompt` reads the prompt field from standard input in memory only, builds a compact read-only context pack, suppresses output when nothing matches, and skips duplicate packs within the same session by comparing score-invariant content digests (`pack_digest`). It writes nothing to the bundle or `.muninn/` sidecar.
+- `post-compact` re-emits the current situation pack after context compaction without recording duplicate `session-begin` or `recall` events.
+
 Codex and Claude Code add successful SessionStart output to agent context.
+Gemini CLI expects JSON on standard output (`SessionStart`, `AfterTool`, `SessionEnd`, and optional `BeforeAgent`). Passing `--adapter gemini` emits the `hookSpecificOutput` JSON envelope when context is present and emits `{}` otherwise.
 Grok executes the hook but does not add its standard output to model context.
 Muninn recognizes Grok's camel-case event envelope and treats startup as
 record-only. This mode records the lifecycle but emits no pack and records no
@@ -80,14 +84,16 @@ exit status 0 and remain silent when the bundle cannot be read.
 
 ### Privacy boundary
 
-The adapter retains only the session identifier and file path. It accepts the
-Claude and Codex snake-case field names and the Grok camel-case field names.
-For Grok, `read_file` maps to a touch. `search_replace` and `write` map to an
-encode. The adapter reads the tool name only to select the event type and then
-discards it. It does not retain prompt text, transcript paths, working
-directories, assistant messages, tool output, patches, or credentials.
-Adversarial tests verify this boundary with payloads that contain decoy
-sensitive fields.
+The adapter retains only the session identifier and file path. It accepts
+snake-case (`tool_input`), camel-case (`toolInput`), and nested `tool_call` or
+`toolCall` envelopes, and checks `file_path`, `target_file`, `path`, and `Path`
+for the target file. The adapter reads the tool name only to select the event
+type and then discards it. The optional `user-prompt` event evaluates the
+prompt string in memory with `reactivate=False` and never writes prompt text,
+session identifiers, or recall events to `.muninn/`. None of the hooks retains
+transcript paths, working directories, assistant messages, tool output,
+patches, or credentials. Adversarial tests verify this boundary with payloads
+that contain decoy sensitive fields.
 
 ## Integrate another agent or editor
 

@@ -360,5 +360,34 @@ class TestBuildEnvScrub(unittest.TestCase):
         self.assertIn("PATH", env)                     # and non-cloud env is preserved
 
 
+class TestLazyCliImports(unittest.TestCase):
+    def test_hook_and_pack_commands_do_not_eagerly_import_heavy_modules(self):
+        import subprocess
+
+        root = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, root, ignore_errors=True)
+        Bundle(root).write_note("n.md", {"title": "Note"}, "body")
+        script = (
+            "import io, json, sys\n"
+            f"sys.path.insert(0, {os.path.join(os.path.dirname(__file__), '..', 'src')!r})\n"
+            "from muninn import cli\n"
+            "sys.stdin = io.StringIO(json.dumps({'session_id': 's1', 'tool_name': 'Read', "
+            "'tool_input': {'file_path': '/nonexistent/file.py'}}))\n"
+            f"cli.main(['--root', {root!r}, 'hook', 'post-tool'])\n"
+            "heavy = {'muninn.demo', 'muninn.enrich', 'muninn.export', 'muninn.extract', "
+            "'muninn.ingest', 'muninn.source_retrieval', 'muninn.sync', 'muninn.viz'}\n"
+            "loaded = sorted(heavy.intersection(sys.modules))\n"
+            "assert not loaded, f'Unexpected eager imports: {loaded}'\n"
+            "assert hasattr(cli.viz, 'write_html')\n"
+        )
+        res = subprocess.run(
+            [sys.executable, "-c", script],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(res.returncode, 0, res.stderr)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

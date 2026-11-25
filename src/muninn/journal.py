@@ -133,7 +133,8 @@ def _clip(text: str, cap: int) -> str:
 
 def threads_section(bundle: Bundle, dyn: Dynamics, cue: str = "",
                     session: str | None = None,
-                    now: float | None = None) -> str:
+                    now: float | None = None,
+                    reactivate: bool = True) -> str:
     """The continuity block, printed BEFORE the context pack: the
     situation-matched thread's compiled head + its latest episode. With
     no lexical match, the most recently journaled thread rides along if
@@ -167,12 +168,14 @@ def threads_section(bundle: Bundle, dyn: Dynamics, cue: str = "",
              + (f"{age}d ago)*" if age else "today)*"), ""]
     if head and head.body.strip():
         lines += [_clip(head.body, SHOWN_HEAD_CHARS), ""]
-        dyn.touch(head.path, kind="recall", session=session)
+        if reactivate:
+            dyn.touch(head.path, kind="recall", session=session)
     if eps:
         path, ep = eps[0]
         lines += [f"**Latest episode** ({ep.title}):",
                   _clip(ep.body, SHOWN_EPISODE_CHARS), ""]
-        dyn.touch(path, kind="recall", session=session)
+        if reactivate:
+            dyn.touch(path, kind="recall", session=session)
     lines.append(f"*(full history: `muninn journal \"{title}\" --show`: "
                  f"{len(eps)} episode(s))*")
     return "\n".join(lines)

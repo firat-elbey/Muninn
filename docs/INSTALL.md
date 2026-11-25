@@ -97,6 +97,8 @@ If diagnostics fail, read the installer requirements. Then repeat the default in
 Setup uses `~/muninn` by default, or `MUNINN_HOME` when set.
 Use `--brain` to select an existing root explicitly.
 Use `--from` to select an existing canonical instruction file instead of `~/AGENTS.md`.
+Use `--no-instructions` on `setup` and `doctor --home` when global instruction files are managed externally and must remain untouched.
+To create only the home bundle layout without modifying instruction or hook files, run `muninn --root <path> init --home`.
 An invalid or unreadable canonical path fails before setup creates configuration.
 An existing home pointer must select the requested root. A conflicting pointer
 stops setup before it creates configuration. Doctor also checks managed command
@@ -192,7 +194,7 @@ An empty knowledge base cannot supply prior personal knowledge.
 For Codex, ask the user to review new or changed hooks through `/hooks`.
 Do not bypass hook trust. The [Codex hook guide](https://learn.chatgpt.com/docs/hooks#review-and-trust-hooks) defines this approval.
 For Grok, run `prime` explicitly because its startup-hook output does not enter model context.
-Gemini receives instructions, but setup does not install Gemini lifecycle hooks.
+Gemini receives instructions, and `muninn hook print-config --adapter gemini` prints optional Gemini CLI lifecycle hooks when you choose to add them to `~/.gemini/settings.json`.
 For any client without a supplied context pack, run `prime` explicitly.
 Restart clients that load instructions only at session start.
 
