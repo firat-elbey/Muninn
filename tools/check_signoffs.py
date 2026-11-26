@@ -5,9 +5,9 @@ ref. The checker never checks out proposed files. Pushes check before..after.
 New branches and manual ROOT runs check every commit reachable from the head.
 Other manual runs check base..GITHUB_SHA. Empty or incomplete ranges fail.
 Every commit requires certification, including merge commits and bot authors.
-GitHub Dependabot trailers and clean GitHub pull-request merge commits over
-certified branches require cryptographic verification against GitHub's pinned
-web-flow PGP public key.
+GitHub Dependabot trailers and clean GitHub pull-request or branch-update merge
+commits over certified branches require cryptographic verification against
+GitHub's pinned web-flow PGP public key.
 """
 
 from __future__ import annotations
@@ -28,6 +28,7 @@ GITHUB_WEBFLOW_COMMITTER = "GitHub <noreply@github.com>"
 DEPENDABOT_AUTHOR = "dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>"
 DEPENDABOT_SIGNOFF = "dependabot[bot] <support@github.com>"
 GITHUB_PR_MERGE_SUBJECT = re.compile(r"^Merge pull request #[1-9][0-9]* from [^\r\n]+$")
+GITHUB_BRANCH_UPDATE_SUBJECT = re.compile(r"^Merge branch '[^\r\n']+' into [^\r\n]+$")
 GITHUB_WEBFLOW_FINGERPRINTS = frozenset({"968479A1AFF927E37D1A566BB5690EEEBB952194"})
 GITHUB_WEBFLOW_PGP_KEY = """\
 -----BEGIN PGP PUBLIC KEY BLOCK-----
@@ -225,24 +226,35 @@ def _inspect_commit_direct(
     ):
         return True, []
     subject = message.splitlines()[0] if message else ""
+    is_pr_merge = bool(GITHUB_PR_MERGE_SUBJECT.fullmatch(subject))
+    is_branch_update = bool(GITHUB_BRANCH_UPDATE_SUBJECT.fullmatch(subject))
     if (
         len(parents) == 2
         and committer_identity == GITHUB_WEBFLOW_COMMITTER
-        and GITHUB_PR_MERGE_SUBJECT.fullmatch(subject)
+        and (is_pr_merge or is_branch_update)
         and verify_webflow_signature(repo, sha, keyring_asc, allowed_fingerprints)
     ):
         try:
             merged_tree = git(
                 repo, "merge-tree", "--write-tree", "--end-of-options", parents[0], parents[1]
             ).strip()
+            rev_range = (
+                f"{parents[0]}..{parents[1]}"
+                if is_pr_merge
+                else f"{parents[0]}...{parents[1]}"
+            )
             branch_revs = git(
-                repo, "rev-list", "--reverse", "--topo-order", f"{parents[0]}..{parents[1]}", "--"
+                repo, "rev-list", "--reverse", "--topo-order", rev_range, "--"
             ).splitlines()
         except SignoffError:
             return False, []
         if merged_tree != tree_id:
             return False, []
-        deps = [commit_sha(rev) for rev in branch_revs] or [parents[1]]
+        revs = [commit_sha(rev) for rev in branch_revs]
+        if is_pr_merge:
+            deps = revs or [parents[1]]
+        else:
+            deps = list(dict.fromkeys([parents[0], parents[1], *revs]))
         return None, deps
     return False, []
 

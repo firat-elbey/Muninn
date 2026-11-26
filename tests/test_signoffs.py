@@ -473,6 +473,128 @@ class SignoffTests(unittest.TestCase):
             )
         )
 
+    def test_github_branch_update_merge_requires_certified_sides(self):
+        trusted_home, trusted_asc, trusted_fprs = self._make_gpg_keypair(
+            "GitHub", "noreply@github.com"
+        )
+        attacker_home, _attacker_asc, _attacker_fprs = self._make_gpg_keypair(
+            "GitHub", "noreply@github.com"
+        )
+        root_tree = self.write_blob_tree("a.txt", "root\n")
+        root = self.write_raw_commit(root_tree, [], AUTHOR, AUTHOR, SIGNED, forged_pgp=False)
+
+        a_blob = self.git("hash-object", "-w", "--stdin", input_text="root\n").strip()
+        b_blob = self.git("hash-object", "-w", "--stdin", input_text="main\n").strip()
+        main_tree = self.git(
+            "mktree",
+            input_text=f"100644 blob {a_blob}\ta.txt\n100644 blob {b_blob}\tb.txt\n",
+        ).strip()
+        main_tip = self.write_raw_commit(
+            main_tree, [root], AUTHOR, AUTHOR, SIGNED, forged_pgp=False
+        )
+
+        pr_tree = self.write_blob_tree("a.txt", "feature\n")
+        pr_tip = self.write_raw_commit(
+            pr_tree, [root], AUTHOR, AUTHOR, SIGNED, forged_pgp=False
+        )
+
+        merged_tree = self.git(
+            "merge-tree", "--write-tree", "--end-of-options", pr_tip, main_tip
+        ).strip()
+        update_msg = "Merge branch 'main' into onboarding-memory-bootstrap"
+        clean_update = self.write_signed_commit(
+            trusted_home, merged_tree, [pr_tip, main_tip],
+            "Synthetic Author", "author@example.invalid",
+            "GitHub", "noreply@github.com",
+            update_msg,
+        )
+        commits = self.checker.proposed_commits(self.repo, main_tip, clean_update)
+        self.assertEqual(
+            self.checker.invalid_signoffs(
+                self.repo, commits,
+                keyring_asc=trusted_asc, allowed_fingerprints=trusted_fprs,
+            ),
+            [],
+        )
+        self.assertTrue(
+            self.checker.has_author_signoff(
+                self.repo, clean_update,
+                keyring_asc=trusted_asc, allowed_fingerprints=trusted_fprs,
+            )
+        )
+
+        unsigned_pr = self.write_raw_commit(
+            pr_tree, [root], AUTHOR, AUTHOR, "Unsigned feature.\n", forged_pgp=False
+        )
+        unsigned_pr_tree = self.git(
+            "merge-tree", "--write-tree", "--end-of-options", unsigned_pr, main_tip
+        ).strip()
+        bad_pr_update = self.write_signed_commit(
+            trusted_home, unsigned_pr_tree, [unsigned_pr, main_tip],
+            "Synthetic Author", "author@example.invalid",
+            "GitHub", "noreply@github.com",
+            update_msg,
+        )
+        self.assertFalse(
+            self.checker.has_author_signoff(
+                self.repo, bad_pr_update,
+                keyring_asc=trusted_asc, allowed_fingerprints=trusted_fprs,
+            )
+        )
+
+        unsigned_base = self.write_raw_commit(
+            main_tree, [root], AUTHOR, AUTHOR, "Unsigned fork main.\n", forged_pgp=False
+        )
+        unsigned_base_tree = self.git(
+            "merge-tree", "--write-tree", "--end-of-options", pr_tip, unsigned_base
+        ).strip()
+        bad_base_update = self.write_signed_commit(
+            trusted_home, unsigned_base_tree, [pr_tip, unsigned_base],
+            "Synthetic Author", "author@example.invalid",
+            "GitHub", "noreply@github.com",
+            update_msg,
+        )
+        self.assertFalse(
+            self.checker.has_author_signoff(
+                self.repo, bad_base_update,
+                keyring_asc=trusted_asc, allowed_fingerprints=trusted_fprs,
+            )
+        )
+
+        evil_tree = self.write_blob_tree("a.txt", "tampered\n")
+        evil_update = self.write_signed_commit(
+            trusted_home, evil_tree, [pr_tip, main_tip],
+            "Synthetic Author", "author@example.invalid",
+            "GitHub", "noreply@github.com",
+            update_msg,
+        )
+        attacker_update = self.write_signed_commit(
+            attacker_home, merged_tree, [pr_tip, main_tip],
+            "Synthetic Author", "author@example.invalid",
+            "GitHub", "noreply@github.com",
+            update_msg,
+        )
+        unsigned_ancestor = self.write_raw_commit(
+            root_tree, [], AUTHOR, AUTHOR, "Unsigned root.\n", forged_pgp=False
+        )
+        signed_descendant = self.write_raw_commit(
+            pr_tree, [unsigned_ancestor], AUTHOR, AUTHOR, SIGNED, forged_pgp=False
+        )
+        ancestor_update = self.write_signed_commit(
+            trusted_home, pr_tree, [unsigned_ancestor, signed_descendant],
+            "Synthetic Author", "author@example.invalid",
+            "GitHub", "noreply@github.com",
+            update_msg,
+        )
+        for bad in (evil_update, attacker_update, ancestor_update):
+            with self.subTest(sha=bad):
+                self.assertFalse(
+                    self.checker.has_author_signoff(
+                        self.repo, bad,
+                        keyring_asc=trusted_asc, allowed_fingerprints=trusted_fprs,
+                    )
+                )
+
 
 if __name__ == "__main__":
     unittest.main()
