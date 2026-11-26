@@ -262,6 +262,217 @@ class SignoffTests(unittest.TestCase):
         self.assertEqual(result.returncode, 1)
         self.assertNotIn("Traceback", result.stderr)
 
+    def _make_gpg_keypair(self, name: str, email: str) -> tuple[str, str, frozenset[str]]:
+        homedir = tempfile.mkdtemp(prefix="test-gpg-")
+        self.addCleanup(subprocess.run, ["gpgconf", "--homedir", homedir, "--kill", "gpg-agent"],
+                        capture_output=True, check=False)
+        self.addCleanup(os.chmod, homedir, 0o700)
+        os.chmod(homedir, 0o700)
+        spec = (
+            "%no-protection\n"
+            "Key-Type: EDDSA\n"
+            "Key-Curve: ed25519\n"
+            "Key-Usage: sign\n"
+            f"Name-Real: {name}\n"
+            f"Name-Email: {email}\n"
+            "Expire-Date: 0\n"
+            "%commit\n"
+        )
+        env = dict(self.env, GNUPGHOME=homedir)
+        subprocess.run(
+            ["gpg", "--batch", "--quiet", "--generate-key"],
+            input=spec, text=True, env=env, check=True, capture_output=True,
+        )
+        colons = subprocess.run(
+            ["gpg", "--batch", "--list-keys", "--with-colons"],
+            text=True, env=env, check=True, capture_output=True,
+        ).stdout
+        fprs = frozenset(
+            line.split(":")[9].upper()
+            for line in colons.splitlines()
+            if line.startswith("fpr:")
+        )
+        asc = subprocess.run(
+            ["gpg", "--batch", "--armor", "--export"],
+            text=True, env=env, check=True, capture_output=True,
+        ).stdout
+        return homedir, asc, fprs
+
+    def write_signed_commit(
+        self,
+        gpg_homedir: str | None,
+        tree: str,
+        parents: list[str],
+        author_name: str,
+        author_email: str,
+        committer_name: str,
+        committer_email: str,
+        message: str,
+    ) -> str:
+        env = dict(
+            self.env,
+            GIT_AUTHOR_NAME=author_name,
+            GIT_AUTHOR_EMAIL=author_email,
+            GIT_COMMITTER_NAME=committer_name,
+            GIT_COMMITTER_EMAIL=committer_email,
+        )
+        args = ["commit-tree", tree]
+        if gpg_homedir is not None:
+            env["GNUPGHOME"] = gpg_homedir
+            args.append("-S")
+        for parent in parents:
+            args.extend(["-p", parent])
+        return subprocess.run(
+            ["git", "-c", "gpg.program=gpg", *args],
+            cwd=self.repo, env=env, input=message, text=True,
+            capture_output=True, check=True,
+        ).stdout.strip()
+
+    def write_raw_commit(
+        self,
+        tree: str,
+        parents: list[str],
+        author: str,
+        committer: str,
+        message: str,
+        forged_pgp: bool = True,
+    ) -> str:
+        lines = [f"tree {tree}"]
+        for parent in parents:
+            lines.append(f"parent {parent}")
+        lines.append(f"author {author} 1794564929 +0000")
+        lines.append(f"committer {committer} 1794564929 +0000")
+        if forged_pgp:
+            lines.extend([
+                "gpgsig -----BEGIN PGP SIGNATURE-----",
+                " ",
+                " wsFcBAABCAAQBQJq9uNCCRC1aQ7uu5UhlAAA1wsQAChRZZzeth7iWJa61KtRtISH",
+                " =OT1t",
+                " -----END PGP SIGNATURE-----",
+            ])
+        raw = "\n".join(lines) + "\n\n" + message
+        return self.git("hash-object", "-t", "commit", "-w", "--stdin", input_text=raw).strip()
+
+    def write_blob_tree(self, name: str, content: str) -> str:
+        blob = self.git("hash-object", "-w", "--stdin", input_text=content).strip()
+        entry = f"100644 blob {blob}\t{name}\n"
+        return self.git("mktree", input_text=entry).strip()
+
+    def test_cryptographic_dependabot_and_merge_verification_blocks_forgeries(self):
+        trusted_home, trusted_asc, trusted_fprs = self._make_gpg_keypair(
+            "GitHub", "noreply@github.com"
+        )
+        attacker_home, _attacker_asc, _attacker_fprs = self._make_gpg_keypair(
+            "GitHub", "noreply@github.com"
+        )
+        root = self.commit()
+        dep_msg = (
+            "Bump tree-sitter from 0.25.2 to 0.26.1\n\n"
+            "Bumps tree-sitter from 0.25.2 to 0.26.1.\n\n"
+            "---\n"
+            "updated-dependencies:\n"
+            "- dependency-name: tree-sitter\n"
+            "  dependency-version: 0.26.1\n"
+            "...\n\n"
+            "Signed-off-by: dependabot[bot] <support@github.com>"
+        )
+        valid_dep = self.write_signed_commit(
+            trusted_home, self.tree, [root],
+            "dependabot[bot]", "49699333+dependabot[bot]@users.noreply.github.com",
+            "GitHub", "noreply@github.com",
+            dep_msg,
+        )
+        self.assertTrue(
+            self.checker.has_author_signoff(
+                self.repo, valid_dep,
+                keyring_asc=trusted_asc, allowed_fingerprints=trusted_fprs,
+            )
+        )
+
+        # Forged raw gpgsig text, attacker-signed PGP key, wrong committer, or wrong trailer MUST fail!
+        forged_raw = self.write_raw_commit(
+            self.tree, [root],
+            "dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>",
+            "GitHub <noreply@github.com>",
+            dep_msg, forged_pgp=True,
+        )
+        attacker_signed = self.write_signed_commit(
+            attacker_home, self.tree, [root],
+            "dependabot[bot]", "49699333+dependabot[bot]@users.noreply.github.com",
+            "GitHub", "noreply@github.com",
+            dep_msg,
+        )
+        wrong_trailer = self.write_signed_commit(
+            trusted_home, self.tree, [root],
+            "dependabot[bot]", "49699333+dependabot[bot]@users.noreply.github.com",
+            "GitHub", "noreply@github.com",
+            "Bump pkg\n\nSigned-off-by: dependabot[bot] <wrong@example.invalid>\n",
+        )
+        for bad in (forged_raw, attacker_signed, wrong_trailer):
+            with self.subTest(sha=bad):
+                self.assertFalse(
+                    self.checker.has_author_signoff(
+                        self.repo, bad,
+                        keyring_asc=trusted_asc, allowed_fingerprints=trusted_fprs,
+                    )
+                )
+        # Also verify forged_raw fails against the default pinned GitHub keyring!
+        self.assertFalse(self.checker.has_author_signoff(self.repo, forged_raw))
+
+        # Clean two-parent GitHub PR merge passes; evil merge and unsigned branch merge fail.
+        base_tree = self.write_blob_tree("a.txt", "base\n")
+        pr_tree = self.write_blob_tree("a.txt", "updated\n")
+        evil_tree = self.write_blob_tree("a.txt", "tampered\n")
+        base_c = self.write_raw_commit(base_tree, [], AUTHOR, AUTHOR, SIGNED, forged_pgp=False)
+        signed_branch = self.write_raw_commit(
+            pr_tree, [base_c], AUTHOR, AUTHOR, SIGNED, forged_pgp=False
+        )
+        merge_msg = "Merge pull request #7 from owner/topic\n\nImprove behavior\n"
+        clean_merge = self.write_signed_commit(
+            trusted_home, pr_tree, [base_c, signed_branch],
+            "Synthetic Author", "author@example.invalid",
+            "GitHub", "noreply@github.com",
+            merge_msg,
+        )
+        commits = self.checker.proposed_commits(self.repo, base_c, clean_merge)
+        self.assertEqual(
+            self.checker.invalid_signoffs(
+                self.repo, commits,
+                keyring_asc=trusted_asc, allowed_fingerprints=trusted_fprs,
+            ),
+            [],
+        )
+
+        evil_merge = self.write_signed_commit(
+            trusted_home, evil_tree, [base_c, signed_branch],
+            "Synthetic Author", "author@example.invalid",
+            "GitHub", "noreply@github.com",
+            merge_msg,
+        )
+        self.assertEqual(
+            self.checker.invalid_signoffs(
+                self.repo, self.checker.proposed_commits(self.repo, base_c, evil_merge),
+                keyring_asc=trusted_asc, allowed_fingerprints=trusted_fprs,
+            ),
+            [evil_merge],
+        )
+
+        unsigned_branch = self.write_raw_commit(
+            pr_tree, [base_c], AUTHOR, AUTHOR, "Unsigned work.\n", forged_pgp=False
+        )
+        merge_of_unsigned = self.write_signed_commit(
+            trusted_home, pr_tree, [base_c, unsigned_branch],
+            "Synthetic Author", "author@example.invalid",
+            "GitHub", "noreply@github.com",
+            merge_msg,
+        )
+        self.assertFalse(
+            self.checker.has_author_signoff(
+                self.repo, merge_of_unsigned,
+                keyring_asc=trusted_asc, allowed_fingerprints=trusted_fprs,
+            )
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
