@@ -122,7 +122,13 @@ Importing an existing transcript archive is an explicit operation:
 
     muninn --root <kb> import-transcripts <directory>
 
-The importer applies the documented secret-scrubbing boundary.
+For initial onboarding across approved transcript folders, inspect metadata first and then run the two-step synthesis exchange:
+
+    muninn --root <kb> bootstrap
+    muninn --root <kb> bootstrap --source <directory> --request
+    muninn --root <kb> bootstrap --source <directory> --apply <kb>/response.json --into <kb>
+
+The importer and bootstrap commands apply the documented secret-scrubbing boundary and preserve existing `provenance: curated` notes.
 
 ## Record writing preferences when they are observed
 

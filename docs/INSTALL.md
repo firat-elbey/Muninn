@@ -209,6 +209,27 @@ Report disk configuration and actual agent use separately.
 List any remaining PATH, discovery, restart, or hook-approval requirement.
 The [adapter guide](ADAPTERS.md) describes the lifecycle integration.
 
+### Optional onboarding memory bootstrap
+
+`install.sh` and `muninn setup` never read past conversations automatically.
+When the user explicitly authorizes bootstrapping initial memory from local transcripts, inspect archive metadata first:
+
+```bash
+"$muninn_bin" --root "$muninn_brain" bootstrap
+```
+
+Discovery inspects file timestamps and directory names under `~/.claude/projects`, `~/.codex/sessions`, and `~/.gemini/tmp` without reading or storing message bodies.
+After the user approves specific archive folders and any date window, run the two-step synthesis exchange:
+
+```bash
+"$muninn_bin" --root "$muninn_brain" bootstrap --source <approved-dir> --days 30 --request
+"$muninn_bin" --root "$muninn_brain" bootstrap --source <approved-dir> --days 30 --apply response.json
+```
+
+`--request` prints the exact model perception and action contract: up to 50 changed sessions (`S001` through `S050`), each with one summary line plus up to 8 secret-scrubbed user excerpts, omitting symbolic links, tool outputs, shell logs, system prompts, assistant dumps, and unapproved folders.
+`--apply` verifies the SHA-256 candidate `digest`, writes bounded `provenance: inferred` notes, threads, and path-guarded unpinned lessons, preserves existing user-authored and `provenance: curated` notes, and records hashed file watermarks in `.muninn/bootstrap.json`.
+Pass `--deterministic` instead of `--request` when you want scrubbed episode notes without a model synthesis pass.
+
 Version 0.2.0 separates saved maps by project and relative source file. Git subfolder scans retain repository-relative resource paths.
 Existing unscoped notes remain unchanged. Review those older notes separately. Setup does not migrate or delete them.
 Refresh updates extracted facts but does not remove every stale note after source deletion or renaming.

@@ -31,6 +31,7 @@ from .volunteer import volunteer_pack
 
 SYNC_REF = "refs/muninn/ledger"
 _LAZY_SUBMODULES = frozenset({
+    "bootstrap",
     "demo",
     "enrich",
     "export",
@@ -1162,6 +1163,9 @@ def cmd_setup(args):
     print("Setup is complete. Start a session in any project. "
           "`muninn doctor --home` verifies the configuration, and "
           "`muninn uninstall` removes managed wiring without deleting knowledge.")
+    print(f"Optional onboarding memory: run `muninn --root {shlex.quote(brain)} "
+          "bootstrap` to inspect local transcript archives before importing "
+          "approved folders.")
 
 
 def _unwire_hook_file(path: str) -> bool:
@@ -1639,6 +1643,105 @@ def cmd_import_transcripts(args):
     print(f"imported {imported} session(s) as episodes"
           + (f" ({skipped} skipped: already imported or empty)"
              if skipped else ""))
+
+
+def cmd_bootstrap(args):
+    """Discover local transcript archives or synthesize approved history."""
+    from . import bootstrap
+
+    modes = sum(bool(flag) for flag in (args.request, args.apply, args.deterministic))
+    if modes > 1 or (args.discover and modes > 0):
+        print(
+            "muninn bootstrap: select only one mode (--discover, --request, --apply, or --deterministic).",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    if modes == 0:
+        found = bootstrap.discover_archives(sources=args.source, days=args.days)
+        if not found:
+            print("No local transcript archives were found.")
+            return
+        print("Discovered transcript archives (metadata only; no messages read):")
+        for item in found:
+            print(
+                f"  {item['project_slug']}  {item['sessions']} session(s)  "
+                f"{item['earliest']} to {item['latest']}  ({item['source']})"
+            )
+        root_q = shlex.quote(os.path.abspath(args.root))
+        print(
+            f"\nApprove folders explicitly with `muninn --root {root_q} bootstrap "
+            "--source <path> --request` (or `--deterministic`)."
+        )
+        return
+
+    try:
+        candidates, watermarks = bootstrap.collect_candidates(
+            args.root,
+            args.source or [],
+            days=args.days,
+            max_sessions=args.max_sessions,
+            force=args.force,
+        )
+    except ValueError as error:
+        print(f"muninn bootstrap: {error}", file=sys.stderr)
+        sys.exit(1)
+
+    if args.request:
+        if not candidates:
+            print("No new or changed transcripts matched the selected sources.")
+            return
+        print(
+            bootstrap.render_request(
+                candidates,
+                root=args.root,
+                sources=args.source or [],
+                days=args.days,
+                max_sessions=args.max_sessions,
+                force=args.force,
+            )
+        )
+        return
+
+    target_root = args.into or args.root
+    os.makedirs(target_root, exist_ok=True)
+    b = Bundle(target_root)
+    d = Dynamics(target_root)
+    if args.deterministic:
+        if not candidates:
+            print("imported 0 session(s) (no new or changed transcripts)")
+            return
+        imported, skipped = bootstrap.bootstrap_deterministic(
+            b, d, candidates, watermarks
+        )
+        print(
+            f"imported {imported} session(s) as episodes"
+            + (f" ({skipped} curated skipped)" if skipped else "")
+        )
+        _refresh_viz(target_root)
+        return
+
+    if not candidates:
+        print(
+            "muninn bootstrap: no new or changed transcripts matched; run --request first.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    try:
+        if args.apply == "-":
+            reply = sys.stdin.read(bootstrap.MAX_REPLY_BYTES + 1)
+        else:
+            with open(args.apply, encoding="utf-8") as fh:
+                reply = fh.read(bootstrap.MAX_REPLY_BYTES + 1)
+        counts = bootstrap.apply_response(b, d, candidates, reply, watermarks)
+    except (OSError, ValueError, TypeError, RecursionError) as error:
+        print(f"muninn bootstrap: {error}", file=sys.stderr)
+        sys.exit(1)
+    print(
+        f"bootstrapped {counts['notes']} note(s), {counts['threads']} thread(s), "
+        f"and {counts['lessons']} lesson(s)"
+        + (f" ({counts['skipped_curated']} curated preserved)" if counts["skipped_curated"] else "")
+    )
+    _refresh_viz(target_root)
 
 
 def cmd_lesson(args):
@@ -2509,6 +2612,33 @@ def main(argv=None):
                           "source directory name.")
     itr.add_argument("--max-sessions", type=int, default=50)
     itr.set_defaults(fn=cmd_import_transcripts)
+
+    bst = sub.add_parser(
+        "bootstrap",
+        help=(
+            "Inspect local transcript metadata or synthesize approved archives "
+            "into initial rooms, threads, and lessons."
+        ),
+    )
+    bst.add_argument("--discover", action="store_true",
+                     help="List detected local transcript archives using file metadata only.")
+    bst.add_argument("--source", action="append", default=None, metavar="PATH",
+                     help="Approve a transcript file or directory. May be repeated.")
+    bst.add_argument("--days", type=_positive_integer, default=None,
+                     help="Restrict to transcripts modified within the last N days.")
+    bst.add_argument("--max-sessions", type=_positive_integer, default=50,
+                     help="Set the maximum number of sessions per pass. The default is 50.")
+    bst.add_argument("--request", action="store_true",
+                     help="Print the scrubbed synthesis contract, session handles, and digest.")
+    bst.add_argument("--apply", default=None, metavar="RESPONSE",
+                     help="Apply a validated JSON response from a file or standard input.")
+    bst.add_argument("--into", default=None,
+                     help="Import bootstrapped notes into the selected bundle.")
+    bst.add_argument("--deterministic", action="store_true",
+                     help="Import scrubbed episode notes without a model synthesis pass.")
+    bst.add_argument("--force", action="store_true",
+                     help="Reprocess files already recorded in .muninn/bootstrap.json.")
+    bst.set_defaults(fn=cmd_bootstrap)
 
     ls = sub.add_parser(
         "lesson",
